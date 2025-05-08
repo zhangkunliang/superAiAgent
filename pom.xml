@@ -91,6 +91,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.houbb</groupId>
+            <artifactId>sensitive-word</artifactId>
+            <version>0.26.0</version>
+<!--            <version></version> &lt;!&ndash; 请检查最新版本 &ndash;&gt;-->
+        </dependency>
     </dependencies>
 
     <build>
