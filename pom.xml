@@ -144,7 +144,13 @@
             <version>0.26.0</version>
 <!--            <version></version> &lt;!&ndash; 请检查最新版本 &ndash;&gt;-->
         </dependency>
-<!--        <dependency>-->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
+            <version>1.0.0-M6</version>
+        </dependency>
+
+        <!--        <dependency>-->
 <!--            <groupId>org.springframework.ai</groupId>-->
 <!--            <artifactId>spring-ai-advisors-vector-store</artifactId>-->
 <!--        </dependency>-->

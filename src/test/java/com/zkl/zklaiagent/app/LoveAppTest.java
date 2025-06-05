@@ -53,4 +53,24 @@ class LoveAppTest {
         Assertions.assertNotNull(answer);
     }
 
+    @Test
+    void testDoChat() {
+    }
+
+    @Test
+    void testDoChatWithReport1() {
+    }
+
+    @Test
+    void testDoChatWithRag() {
+    }
+
+    @Test
+    void doChatWithMcp() {
+        String chatId = UUID.randomUUID().toString();
+        // 测试地图 MCP
+        String message = "我的另一半住在南昌西湖区朝阳购物中心，请帮我找到5公里内适合约会的去处";
+        String answer =  loveApp.doChatWithMcp(message, chatId);
+    }
+
 }

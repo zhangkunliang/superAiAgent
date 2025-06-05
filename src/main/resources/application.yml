@@ -2,10 +2,21 @@ spring:
   application:
     name: zkl-ai-agent
   profiles:
-    active: local
+    active: sse
+  ai:
+    mcp:
+      client:
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+      server:
+        name: webmvc-mcp-server
+        version: 1.0.0
+        type: SYNC # 同步
+        sse-message-endpoint: /mcp/message  # SSE 消息端点路径
+        sse-endpoint: /sse                  # SSE 端点路径
 
 server:
-  port: 8123
+  port: 8127
   servlet:
     context-path: /api
 # springdoc-openapi config

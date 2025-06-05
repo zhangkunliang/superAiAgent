@@ -36,3 +36,4 @@ build/
 ### VS Code ###
 .vscode/
 !/src/main/java/com/zkl/zklaiagent/constant/FileConstant.java
+!/src/main/resources/mcp-servers.json
