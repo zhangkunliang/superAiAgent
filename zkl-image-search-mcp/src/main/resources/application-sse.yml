@@ -1,7 +1,8 @@
+spring:
   ai:
     mcp:
       server:
-        name: zkl-image-search-mcp
+        name: zkl-image-search-mcp-server
         version: 0.0.1
         type: SYNC
         # sse
