@@ -2,21 +2,34 @@ spring:
   application:
     name: zkl-ai-agent
   profiles:
-    active: stdio
+    active: local
   ai:
-    mcp:
-      client:
-        stdio:
-          servers-configuration: classpath:mcp-servers.json
-#      server:
-#        name: webmvc-mcp-server
-#        version: 1.0.0
-#        type: SYNC # 同步
-#        sse-message-endpoint: /mcp/message  # SSE 消息端点路径
-#        sse-endpoint: /sse                  # SSE 端点路径
-
+    dashscope:
+      api-key: your-api-key
+      chat:
+        options:
+          model: qwen-plus
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: gemma3:1b
+# 临时注释掉，便于大家开发调试和部署
+#    mcp:
+#      client:
+#        sse:
+#          connections:
+#            server1:
+#              url: http://localhost:8127
+#        stdio:
+#          servers-configuration: classpath:mcp-servers.json
+#    vectorstore:
+#      pgvector:
+#        index-type: HNSW
+#        dimensions: 1536
+#        distance-type: COSINE_DISTANCE
+#        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
 server:
-  port: 8127
+  port: 8123
   servlet:
     context-path: /api
 # springdoc-openapi config
@@ -36,3 +49,10 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+# searchAPI
+search-api:
+  api-key: 你的 API Key
+# 修改日志级别，查看 Spring AI 更多调用细节
+logging:
+  level:
+    org.springframework.ai: DEBUG
