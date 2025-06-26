@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 @SpringBootTest
-class LoveAppVectorStoreConfigTest {
+class InspectorAppVectorStoreConfigTest {
 
     @Test
-    void loveAppVectorStore() {
+    void inspectorAppVectorStore() {
     }
 
 

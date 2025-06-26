@@ -12,7 +12,7 @@ spring:
 #      base-url: http://localhost:11434
 #      chat:
 #        model: gemma3:1b
-# 临时注释掉，便于大家开发调试和部署
+# 临时注释掉，便于开发调试和部署
 #    mcp:
 #      client:
 #        sse:
@@ -50,7 +50,7 @@ knife4j:
     language: zh_cn
 # searchAPI
 search-api:
-  api-key: 你的 API Key
+  api-key: API Key
 # 修改日志级别，查看 Spring AI 更多调用细节
 logging:
   level:

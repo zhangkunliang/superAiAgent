@@ -8,33 +8,33 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.UUID;
 
 @SpringBootTest
-class LoveAppTest {
+class InspectorAppTest {
 
     @Resource
-    private LoveApp loveApp;
+    private InspectorApp inspectorApp;
 
     @Test
     void testChat() {
         String chatId = UUID.randomUUID().toString();
         // 第一轮
         String message = "你好，我是吴彦祖";
-        String answer = loveApp.doChat(message, chatId);
+        String answer = inspectorApp.doChat(message, chatId);
         // 第二轮
-        message = "我想让另一半（刘亦菲）更爱我";
-        answer = loveApp.doChat(message, chatId);
+        message = "我想查询关于专职和兼职疾控监督员的区别";
+        answer = inspectorApp.doChat(message, chatId);
         Assertions.assertNotNull(answer);
         // 第三轮
-        message = "我的另一半叫什么来着？刚跟你说过，帮我回忆一下";
-        answer = loveApp.doChat(message, chatId);
+        message = "我刚刚查询了什么来着？刚跟你说过，帮我回忆一下";
+        answer = inspectorApp.doChat(message, chatId);
         Assertions.assertNotNull(answer);
     }
 
     @Test
     void doChatWithReport() {
         String chatId = UUID.randomUUID().toString();
-        String message = "你好，我想让另一半（刘亦菲）更爱我，但我不知道该怎么做";
-        LoveApp.LoveReport loveReport = loveApp.doChatWithReport(message, chatId);
-        Assertions.assertNotNull(loveReport);
+        String message = "你好，我想查询关于专职和兼职疾控监督员的区别";
+        InspectorApp.InspectorReport inspectorReport = inspectorApp.doChatWithReport(message, chatId);
+        Assertions.assertNotNull(inspectorReport);
     }
 
     @Test
@@ -48,8 +48,8 @@ class LoveAppTest {
     @Test
     void doChatWithRag() {
         String chatId = UUID.randomUUID().toString();
-        String message = "我已经结婚了，但是婚后关系不太亲密，怎么办？";
-        String answer =  loveApp.doChatWithRag(message, chatId);
+        String message = "我想查询关于专职和兼职疾控监督员的区别";
+        String answer =  inspectorApp.doChatWithRag(message, chatId);
         Assertions.assertNotNull(answer);
     }
 
@@ -69,8 +69,8 @@ class LoveAppTest {
     void doChatWithMcp() {
         String chatId = UUID.randomUUID().toString();
         // 测试地图 MCP
-        String message = "帮我搜索一些哄对象开心的图片";
-        String answer =  loveApp.doChatWithMcp(message, chatId);
+        String message = "帮我搜索一些关于江西省疾控监督执法的现场图片";
+        String answer =  inspectorApp.doChatWithMcp(message, chatId);
         Assertions.assertNull(answer);
     }
 

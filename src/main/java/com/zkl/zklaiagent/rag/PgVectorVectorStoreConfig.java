@@ -5,9 +5,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
@@ -19,7 +17,7 @@ import static org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexT
 public class PgVectorVectorStoreConfig {
 
     @Resource
-    private LoveAppDocumentLoader loveAppDocumentLoader;
+    private InspectorAppDocumentLoader inspectorAppDocumentLoader;
 
     @Bean
     public VectorStore pgVectorVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel dashscopeEmbeddingModel) {
@@ -33,7 +31,7 @@ public class PgVectorVectorStoreConfig {
                 .maxDocumentBatchSize(10000)         // Optional: defaults to 10000
                 .build();
         // 加载文档
-        List<Document> documents = loveAppDocumentLoader.loadMarkdowns();
+        List<Document> documents = inspectorAppDocumentLoader.loadMarkdowns();
         vectorStore.add(documents);
         return vectorStore;
     }

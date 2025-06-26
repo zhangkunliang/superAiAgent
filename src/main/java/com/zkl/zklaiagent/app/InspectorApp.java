@@ -1,7 +1,7 @@
 package com.zkl.zklaiagent.app;
 
-import com.zkl.zklaiagent.advisor.ForbiddenWordAdvisor;
 import com.zkl.zklaiagent.advisor.MyLoggerAdvisor;
+import com.zkl.zklaiagent.rag.InspectorAppRagCustomAdvisorFactory;
 import com.zkl.zklaiagent.rag.QueryRewriter;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -26,16 +26,20 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 
 @Component
 @Slf4j
-public class LoveApp {
+public class InspectorApp {
 
     private final ChatClient chatClient;
 
-    private static final String SYSTEM_PROMPT = "扮演深耕恋爱心理领域的专家。开场向用户表明身份，告知用户可倾诉恋爱难题。" +
-            "围绕单身、恋爱、已婚三种状态提问：单身状态询问社交圈拓展及追求心仪对象的困扰；" +
-            "恋爱状态询问沟通、习惯差异引发的矛盾；已婚状态询问家庭责任与亲属关系处理的问题。" +
-            "引导用户详述事情经过、对方反应及自身想法，以便给出专属解决方案。";
+    private static final String SYSTEM_PROMPT = "扮演疾病预防控制与卫生监督领域的资深专家。开场向用户表明疾控监督专家身份，告知可咨询公共卫生、传染病防控、医疗卫生监管等专业问题。" +
+            "围绕以下核心领域提供专业解答：\n" +
+            "1. 传染病防控：包括疫情监测预警、流行病学调查、应急处置方案等\n" +
+            "2. 公共卫生监督：涵盖医疗机构监管、医疗废物处理、饮用水卫生等\n" +
+            "3. 卫生法规标准：解读《传染病防治法》《突发公共卫生事件应急条例》等\n" +
+            "4. 疾病预防策略：提供疫苗接种、慢性病管理、职业卫生防护等专业指导\n" +
+            "5. 卫生应急响应：针对生物恐怖、食物中毒等突发事件的处置建议\n" +
+            "要求用户详细描述问题背景、已采取的措施及具体需求，以便给出符合专业规范的解决方案。所有建议必须基于最新国家卫生标准和技术指南。";
     @Autowired
-    private Advisor loveAppRagCloudAdvisor;
+    private Advisor inspectorAppRagCloudAdvisor;
 
     @Autowired
     private QueryRewriter queryRewriter;
@@ -45,7 +49,7 @@ public class LoveApp {
      *
      * @param dashscopeChatModel
      */
-    public LoveApp(ChatModel dashscopeChatModel) {
+    public InspectorApp(ChatModel dashscopeChatModel) {
 //        // 初始化基于文件的对话记忆
 //        String fileDir = System.getProperty("user.dir") + "/tmp/chat-memory";
 //        ChatMemory chatMemory = new FileBasedChatMemory(fileDir);
@@ -85,7 +89,7 @@ public class LoveApp {
         return content;
     }
 
-    record LoveReport(String title, List<String> suggestions) {
+    record InspectorReport(String title, List<String> suggestions) {
 
     }
     /**Add commentMore actions
@@ -107,30 +111,32 @@ public class LoveApp {
 
 
     /**
-     * AI 恋爱报告功能（实战结构化输出）
+     * AI 疾控监督专家报告功能（实战结构化输出）
      *
      * @param message
      * @param chatId
      * @return
      */
-    public LoveReport doChatWithReport(String message, String chatId) {
-        LoveReport loveReport = chatClient
+    public InspectorReport doChatWithReport(String message, String chatId) {
+        InspectorReport inspectorReport = chatClient
                 .prompt()
-                .system(SYSTEM_PROMPT + "每次对话后都要生成恋爱结果，标题为{用户名}的恋爱报告，内容为建议列表")
+                .system(SYSTEM_PROMPT + "每次对话后都要生成查询结果，标题为{用户名}的查询报告，内容为建议列表")
                 .user(message)
                 .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
                         .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
                 .call()
-                .entity(LoveReport.class);
-        log.info("loveReport: {}", loveReport);
-        return loveReport;
+                .entity(InspectorReport.class);
+        log.info("inspectorReport: {}", inspectorReport);
+        return inspectorReport;
     }
 
     /**
-     * Ai恋爱大师
+     * Ai疾控监督专家
      */
     @Resource
-    private VectorStore loveAppVectorStore;
+    private VectorStore inspectorAppVectorStore;
+    @Resource
+    private VectorStore pgVectorVectorStore;
 
     public String doChatWithRag(String message, String chatId) {
         ChatResponse chatResponse = chatClient
@@ -141,8 +147,16 @@ public class LoveApp {
                 // 开启日志，便于观察效果
                 .advisors(new MyLoggerAdvisor())
                 // 应用知识库问答
-                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))
-                .advisors(loveAppRagCloudAdvisor)
+                .advisors(new QuestionAnswerAdvisor(inspectorAppVectorStore))
+                .advisors(inspectorAppRagCloudAdvisor)
+                // 应用 RAG 检索增强服务（基于 PgVector 向量存储）
+//                .advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))
+                // 应用自定义的 RAG 检索增强服务（文档查询器 + 上下文增强器）
+//                .advisors(
+//                        InspectorAppRagCustomAdvisorFactory.createInspectorAppRagCustomAdvisor(
+//                                inspectorAppVectorStore, "卫生监督"
+//                        )
+//                )
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
