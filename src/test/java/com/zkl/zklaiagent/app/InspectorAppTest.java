@@ -48,7 +48,7 @@ class InspectorAppTest {
     @Test
     void doChatWithRag() {
         String chatId = UUID.randomUUID().toString();
-        String message = "我想查询关于专职和兼职疾控监督员的区别";
+        String message = "医院用血的相关政策有哪些？多久输送一次？检测标准有哪些";
         String answer =  inspectorApp.doChatWithRag(message, chatId);
         Assertions.assertNotNull(answer);
     }

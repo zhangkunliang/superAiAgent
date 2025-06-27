@@ -38,11 +38,7 @@ public class InspectorApp {
             "4. 疾病预防策略：提供疫苗接种、慢性病管理、职业卫生防护等专业指导\n" +
             "5. 卫生应急响应：针对生物恐怖、食物中毒等突发事件的处置建议\n" +
             "要求用户详细描述问题背景、已采取的措施及具体需求，以便给出符合专业规范的解决方案。所有建议必须基于最新国家卫生标准和技术指南。";
-    @Autowired
-    private Advisor inspectorAppRagCloudAdvisor;
 
-    @Autowired
-    private QueryRewriter queryRewriter;
 
     /**
      * 初始化 ChatClient
@@ -105,6 +101,12 @@ public class InspectorApp {
                 .user(message)
                 .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
                         .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                // 开启日志，便于观察效果
+                .advisors(new MyLoggerAdvisor())
+//                 应用知识库问答
+                .advisors(new QuestionAnswerAdvisor(inspectorAppVectorStore))
+                // 应用增强检索服务（云知识库服务）
+                .advisors(inspectorAppRagCloudAdvisor)
                 .stream()
                 .content();
     }
@@ -135,9 +137,13 @@ public class InspectorApp {
      */
     @Resource
     private VectorStore inspectorAppVectorStore;
-    @Resource
-    private VectorStore pgVectorVectorStore;
-
+//    @Resource
+//    private VectorStore pgVectorVectorStore;
+    @Autowired
+    private Advisor inspectorAppRagCloudAdvisor;
+//
+    @Autowired
+    private QueryRewriter queryRewriter;
     public String doChatWithRag(String message, String chatId) {
         ChatResponse chatResponse = chatClient
                 .prompt()
@@ -146,8 +152,9 @@ public class InspectorApp {
                         .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
                 // 开启日志，便于观察效果
                 .advisors(new MyLoggerAdvisor())
-                // 应用知识库问答
+//                 应用知识库问答
                 .advisors(new QuestionAnswerAdvisor(inspectorAppVectorStore))
+                // 应用增强检索服务（云知识库服务）
                 .advisors(inspectorAppRagCloudAdvisor)
                 // 应用 RAG 检索增强服务（基于 PgVector 向量存储）
 //                .advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))

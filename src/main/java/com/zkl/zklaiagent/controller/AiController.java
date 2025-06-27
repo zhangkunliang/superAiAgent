@@ -36,8 +36,8 @@ public class AiController {
      * @return
      */
     @GetMapping("/inspector_app/chat/sync")
-    public String doChatWithinspectorAppSync(String message, String chatId) {
-        return inspectorApp.doChat(message, chatId);
+    public String doChatWithInspectorAppSync(String message, String chatId) {
+        return inspectorApp.doChatWithRag(message, chatId);
     }
 
     /**
@@ -48,7 +48,7 @@ public class AiController {
      * @return
      */
     @GetMapping(value = "/inspector_app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> doChatWithinspectorAppSSE(String message, String chatId) {
+    public Flux<String> doChatWithInspectorAppSSE(String message, String chatId) {
         return inspectorApp.doChatByStream(message, chatId);
     }
 
@@ -60,7 +60,7 @@ public class AiController {
      * @return
      */
     @GetMapping(value = "/inspector_app/chat/server_sent_event")
-    public Flux<ServerSentEvent<String>> doChatWithinspectorAppServerSentEvent(String message, String chatId) {
+    public Flux<ServerSentEvent<String>> doChatWithInspectorAppServerSentEvent(String message, String chatId) {
         return inspectorApp.doChatByStream(message, chatId)
                 .map(chunk -> ServerSentEvent.<String>builder()
                         .data(chunk)
@@ -75,7 +75,7 @@ public class AiController {
      * @return
      */
     @GetMapping(value = "/inspector_app/chat/sse_emitter")
-    public SseEmitter doChatWithinspectorAppServerSseEmitter(String message, String chatId) {
+    public SseEmitter doChatWithInspectorAppServerSseEmitter(String message, String chatId) {
         // 创建一个超时时间较长的 SseEmitter
         SseEmitter sseEmitter = new SseEmitter(180000L); // 3 分钟超时
         // 获取 Flux 响应式数据流并且直接通过订阅推送给 SseEmitter

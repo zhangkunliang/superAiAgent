@@ -1,0 +1,20 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="50" fill="#0066B3"/>
+  <circle cx="50" cy="50" r="45" fill="white"/>
+  <circle cx="50" cy="50" r="40" fill="#0066B3"/>
+  <path d="M50 22C34.536 22 22 34.536 22 50C22 65.464 34.536 78 50 78C65.464 78 78 65.464 78 50C78 34.536 65.464 22 50 22ZM50 74C36.767 74 26 63.233 26 50C26 36.767 36.767 26 50 26C63.233 26 74 36.767 74 50C74 63.233 63.233 74 50 74Z" fill="white"/>
+  
+  <!-- 小麦枝叶 -->
+  <path d="M32 35C32 35 38 28 50 28C62 28 68 35 68 35" stroke="white" stroke-width="1.5"/>
+  <path d="M30 42C30 42 38 33 50 33C62 33 70 42 70 42" stroke="white" stroke-width="1.5"/>
+  <path d="M30 50C30 50 38 41 50 41C62 41 70 50 70 50" stroke="white" stroke-width="1.5"/>
+  
+  <!-- 中间的书本图案 -->
+  <path d="M42 42H58V60H42V42Z" fill="white"/>
+  <path d="M50 42V60" stroke="#0066B3" stroke-width="1.5"/>
+  <path d="M42 42H58" stroke="#0066B3" stroke-width="1.5"/>
+  <path d="M42 60H58" stroke="#0066B3" stroke-width="1.5"/>
+  
+  <!-- 底部中文字样 -->
+  <path d="M38 68C38 68 44 65 50 65C56 65 62 68 62 68" stroke="white" stroke-width="1.5"/>
+</svg> 

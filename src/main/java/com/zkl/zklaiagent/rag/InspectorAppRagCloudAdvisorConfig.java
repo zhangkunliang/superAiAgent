@@ -21,7 +21,7 @@ class InspectorAppRagCloudAdvisorConfig {
     @Bean
     public Advisor inspectorAppRagCloudAdvisor() {
         DashScopeApi dashScopeApi = new DashScopeApi(dashScopeApiKey);
-        final String KNOWLEDGE_INDEX = "疾控监督专家";
+        final String KNOWLEDGE_INDEX = "疾控监督员法律法规";
         DocumentRetriever documentRetriever = new DashScopeDocumentRetriever(dashScopeApi,
                 DashScopeDocumentRetrieverOptions.builder()
                         .withIndexName(KNOWLEDGE_INDEX)

@@ -1,0 +1,42 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="50" fill="#F5F7FF"/>
+
+  <!-- 机器人头部 -->
+  <path d="M50 15C36 15 35 26 35 35V45H65V35C65 26 64 15 50 15Z" fill="#E6E9F5" stroke="#7A8AB8" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- 头部天线 -->
+  <circle cx="50" cy="15" r="3" fill="#7A8AB8"/>
+  <path d="M50 12V8" stroke="#7A8AB8" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- 眼睛 -->
+  <circle cx="50" cy="30" r="7" fill="#F5F7FF" stroke="#7A8AB8" stroke-width="2"/>
+  <circle cx="50" cy="30" r="3" fill="#FFD600"/>
+  
+  <!-- 耳朵/侧部配件 -->
+  <path d="M33 35C33 33.3431 31.6569 32 30 32V38C31.6569 38 33 36.6569 33 35Z" fill="#E6E9F5" stroke="#7A8AB8" stroke-width="2"/>
+  <path d="M67 35C67 33.3431 68.3431 32 70 32V38C68.3431 38 67 36.6569 67 35Z" fill="#E6E9F5" stroke="#7A8AB8" stroke-width="2"/>
+  
+  <!-- 脸部细节 -->
+  <circle cx="58" cy="35" r="1" fill="#FF8A80"/>
+  
+  <!-- 颈部连接 -->
+  <path d="M40 45V50H60V45" stroke="#7A8AB8" stroke-width="2.5"/>
+  
+  <!-- 机器人身体 -->
+  <rect x="30" y="50" width="40" height="25" rx="5" fill="#E6E9F5" stroke="#7A8AB8" stroke-width="2.5"/>
+  
+  <!-- 身体细节 -->
+  <rect x="35" y="60" width="10" height="3" rx="1.5" fill="#7A8AB8"/>
+  
+  <!-- 按钮 -->
+  <circle cx="46" cy="65" r="2" fill="#7A8AB8"/>
+  <circle cx="54" cy="65" r="2" fill="#7A8AB8"/>
+  
+  <!-- 手臂 -->
+  <path d="M30 55H25C22 55 20 58 20 60V70C20 72 22 73 25 73H30" stroke="#7A8AB8" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M70 55H75C78 55 80 58 80 60V70C80 72 78 73 75 73H70" stroke="#7A8AB8" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- 爪子/手 -->
+  <path d="M18 60C15 60 15 63 18 63M18 70C15 70 15 67 18 67" stroke="#7A8AB8" stroke-width="2" stroke-linecap="round"/>
+  <path d="M82 60C85 60 85 63 82 63M82 70C85 70 85 67 82 67" stroke="#7A8AB8" stroke-width="2" stroke-linecap="round"/>
+</svg> 

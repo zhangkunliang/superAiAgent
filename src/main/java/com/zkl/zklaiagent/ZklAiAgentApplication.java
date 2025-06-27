@@ -10,8 +10,8 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerA
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication(exclude = {
-        DataSourceAutoConfiguration.class,
-        DataSourceTransactionManagerAutoConfiguration.class,
+        DataSourceAutoConfiguration.class
+        ,
         PgVectorStoreAutoConfiguration.class
 })public class ZklAiAgentApplication {
 
