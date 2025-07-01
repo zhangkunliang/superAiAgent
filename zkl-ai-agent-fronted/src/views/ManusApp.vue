@@ -14,35 +14,55 @@
     
     <main class="chat-main">
       <div class="container chat-container-inner">
-        <div class="chat-sidebar">
-          <div class="sidebar-header">
-            <h3 class="sidebar-title">历史会话</h3>
-            <button class="new-chat-btn" @click="createNewChat" title="新建会话">
-              <span class="new-chat-icon">+</span>
-            </button>
-          </div>
-          <div class="session-list">
-            <div 
-              v-for="(session, id) in chatSessions" 
-              :key="id" 
-              class="session-item"
-              :class="{ active: id === chatId }"
-            >
-              <div class="session-content" @click="switchSession(id)">
-                <span class="session-name" :title="getSessionTitle(session)">{{ getSessionTitle(session) }}</span>
-                <span class="session-time">{{ formatSessionTime(session) }}</span>
-              </div>
-              <button class="delete-session-btn" @click.stop="confirmDeleteSession(id)" title="删除会话">
-                <span class="delete-icon">×</span>
-              </button>
+        <div class="sidebar-wrapper" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
+          <div class="chat-sidebar">
+            <div class="sidebar-collapse-btn" @click="toggleSidebar" :title="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="4" width="16" height="16" rx="3" />
+                <path d="M14 8L10 12L14 16" />
+              </svg>
             </div>
-            <div v-if="Object.keys(chatSessions).length === 0" class="no-sessions">
-              暂无历史会话
+            <div class="sidebar-header">
+              <h3 class="sidebar-title">历史会话</h3>
+            </div>
+            
+            <button class="new-chat-button" @click="createNewChat">
+              <span class="icon">+</span>
+              新建对话
+            </button>
+            
+            <div class="session-list">
+              <div 
+                v-for="(session, id) in chatSessions" 
+                :key="id" 
+                class="session-item"
+                :class="{ active: id === chatId }"
+              >
+                <div class="session-content" @click="switchSession(id)">
+                  <span class="session-name" :title="getSessionTitle(session)">{{ getSessionTitle(session) }}</span>
+                  <span class="session-time">{{ formatSessionTime(session) }}</span>
+                </div>
+                <button class="delete-session-btn" @click.stop="confirmDeleteSession(id)" title="删除会话">
+                  <span class="delete-icon">×</span>
+                </button>
+              </div>
+              <div v-if="Object.keys(chatSessions).length === 0" class="no-sessions">
+                暂无历史会话
+              </div>
             </div>
           </div>
         </div>
         
-        <div class="chat-content">
+        <div class="chat-content" :class="{ 'content-expanded': isSidebarCollapsed }">
+          <!-- 侧边栏收起后的展开按钮 -->
+          <div v-if="isSidebarCollapsed" class="sidebar-expand-btn" @click="toggleSidebar" title="展开侧边栏">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="4" y="4" width="16" height="16" rx="3" />
+              <path d="M10 8L14 12L10 16" />
+            </svg>
+            <span class="tooltip">展开侧边栏</span>
+          </div>
+          
           <div class="chat-messages" ref="messagesContainer">
             <div v-if="messages.length === 0" class="empty-chat">
               <div class="welcome-message">
@@ -116,7 +136,8 @@ export default {
       sseConnection: null,
       aiAvatar: aiAvatarManus,
       showDeleteConfirm: false,
-      sessionToDelete: null
+      sessionToDelete: null,
+      isSidebarCollapsed: false
     };
   },
   computed: {
@@ -136,6 +157,12 @@ export default {
     // 如果是新的URL但没有chatId参数，更新URL
     if (!this.$route.params.chatId) {
       this.$router.replace({ name: 'manus-app', params: { chatId: this.chatId } });
+    }
+    
+    // 从本地存储加载侧边栏状态
+    const savedState = localStorage.getItem('manusSidebarCollapsed');
+    if (savedState !== null) {
+      this.isSidebarCollapsed = savedState === 'true';
     }
   },
   mounted() {
@@ -293,6 +320,12 @@ export default {
         return title.length > 20 ? title.substring(0, 20) + '...' : title;
       }
       return '新会话';
+    },
+    
+    toggleSidebar() {
+      this.isSidebarCollapsed = !this.isSidebarCollapsed;
+      // 保存用户偏好到本地存储
+      localStorage.setItem('manusSidebarCollapsed', this.isSidebarCollapsed);
     }
   },
   beforeUnmount() {
@@ -363,17 +396,97 @@ export default {
   height: 100%;
 }
 
-.chat-sidebar {
-  width: 250px;
-  background-color: var(--white);
-  border-radius: 8px;
-  padding: 15px;
+.sidebar-wrapper {
+  width: 280px;
+  min-width: 280px;
+  position: relative;
+  transition: all 0.3s ease;
   margin-right: 20px;
-  box-shadow: var(--shadow);
+}
+
+.sidebar-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  margin-right: 0 !important;
+}
+
+.chat-sidebar {
+  width: 100%;
+  height: 100%;
+  background-color: var(--white);
+  border-right: 1px solid var(--light-gray);
+  border-radius: 8px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: var(--shadow);
+}
+
+.sidebar-collapsed .chat-sidebar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-collapse-btn {
+  position: absolute;
+  top: 20px;
+  right: -16px;
+  width: 32px;
+  height: 32px;
+  background-color: var(--white);
+  border: 1px solid var(--light-gray);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  color: #666;
+}
+
+.sidebar-collapse-btn:hover {
+  background-color: #f0f5ff;
+  color: var(--secondary-color);
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-collapse-btn::after {
+  content: "收起侧边栏";
+  position: absolute;
+  top: 50%;
+  right: 42px;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.sidebar-collapse-btn:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-collapsed .sidebar-collapse-btn {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.arrow-icon {
+  font-size: 14px;
+  line-height: 1;
+  font-weight: bold;
 }
 
 .sidebar-header {
@@ -391,27 +504,31 @@ export default {
   color: var(--text-color);
 }
 
-.new-chat-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: var(--secondary-color);
-  color: white;
-  border: none;
+.new-chat-button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: white;
+  color: var(--text-color);
+  border: 1px solid var(--light-gray);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 14px;
+  margin: 0 0 15px 0;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.new-chat-btn:hover {
-  background-color: #2d9247;
+.new-chat-button:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
-.new-chat-icon {
-  font-size: 18px;
-  font-weight: bold;
+.icon {
+  margin-right: 8px;
+  font-size: 16px;
 }
 
 .session-list {
@@ -501,11 +618,16 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  overflow: hidden;
   background-color: var(--white);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.content-expanded {
+  max-width: 100%;
 }
 
 .chat-messages {
@@ -639,7 +761,7 @@ export default {
     flex-direction: column;
   }
   
-  .chat-sidebar {
+  .sidebar-wrapper {
     width: 100%;
     margin-right: 0;
     margin-bottom: 15px;
@@ -670,5 +792,61 @@ export default {
     visibility: visible;
     opacity: 1;
   }
+}
+
+/* 侧边栏展开按钮 */
+.sidebar-expand-btn {
+  position: absolute;
+  top: 20px;
+  left: -16px;
+  width: 32px;
+  height: 32px;
+  background-color: var(--white);
+  border: 1px solid var(--light-gray);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  color: #666;
+}
+
+.sidebar-expand-btn:hover {
+  background-color: #f0f5ff;
+  color: var(--secondary-color);
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip {
+  position: absolute;
+  left: 42px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.sidebar-expand-btn:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-collapse-btn svg, .sidebar-expand-btn svg {
+  stroke: #666;
+  transition: stroke 0.2s ease;
+}
+
+.sidebar-collapse-btn:hover svg, .sidebar-expand-btn:hover svg {
+  stroke: var(--secondary-color);
 }
 </style>

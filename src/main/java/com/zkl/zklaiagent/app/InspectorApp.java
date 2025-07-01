@@ -152,12 +152,12 @@ public class InspectorApp {
                         .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
                 // 开启日志，便于观察效果
                 .advisors(new MyLoggerAdvisor())
-//                 应用知识库问答
+                // 应用知识库问答
                 .advisors(new QuestionAnswerAdvisor(inspectorAppVectorStore))
                 // 应用增强检索服务（云知识库服务）
                 .advisors(inspectorAppRagCloudAdvisor)
                 // 应用 RAG 检索增强服务（基于 PgVector 向量存储）
-//                .advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))
+                // .advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))
                 // 应用自定义的 RAG 检索增强服务（文档查询器 + 上下文增强器）
 //                .advisors(
 //                        InspectorAppRagCustomAdvisorFactory.createInspectorAppRagCustomAdvisor(

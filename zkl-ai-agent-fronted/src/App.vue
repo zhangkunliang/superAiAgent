@@ -3,7 +3,7 @@
     <router-view />
     <footer class="footer">
       <div class="container">
-        <p>&copy; {{ currentYear }} 天王星数字科技有限公司. 保留所有权利.</p>
+        <p>&copy; {{ currentYear }} 天王星数字科技有限公司 保留所有权利</p>
       </div>
     </footer>
   </div>

@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: zkl-ai-agent
+  profiles:
+    active: local
+  ai:
+    dashscope:
+      api-key: sk-1a0fd4b8779d4de79bc23d3fd3431f9d
+      chat:
+        options:
+          model: qwen-plus

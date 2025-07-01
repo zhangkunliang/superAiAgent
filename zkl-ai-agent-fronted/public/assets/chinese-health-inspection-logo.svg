@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Chinese National Health Inspection logo - circular blue logo with white emblem -->
+  <circle cx="100" cy="100" r="95" fill="#0078d7"/>
+  <path d="M100 15c-47.5 0-85 37.5-85 85s37.5 85 85 85 85-37.5 85-85-37.5-85-85-85zm0 160c-41.4 0-75-33.6-75-75s33.6-75 75-75 75 33.6 75 75-33.6 75-75 75z" fill="#fff"/>
+  <path d="M100 40c-33.1 0-60 26.9-60 60s26.9 60 60 60 60-26.9 60-60-26.9-60-60-60zm0 110c-27.6 0-50-22.4-50-50s22.4-50 50-50 50 22.4 50 50-22.4 50-50 50z" fill="#fff"/>
+  <path d="M85 70v60h30v-60H85zm20 50H95V80h10v40z" fill="#fff"/>
+  <path d="M65 85h70v10H65z" fill="#fff"/>
+  <path d="M75 75h50v30H75z" fill="#fff" fill-opacity="0.3"/>
+</svg> 

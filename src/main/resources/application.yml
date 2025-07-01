@@ -50,7 +50,7 @@ knife4j:
     language: zh_cn
 # searchAPI
 search-api:
-  api-key: API Key
+  api-key: PcmFtso9MkEKe1SD6B7YZHUb
 # 修改日志级别，查看 Spring AI 更多调用细节
 logging:
   level:
