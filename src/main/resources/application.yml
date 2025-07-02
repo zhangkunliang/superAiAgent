@@ -2,7 +2,7 @@ spring:
   application:
     name: zkl-ai-agent
   profiles:
-    active: local
+    active: prod
   ai:
     dashscope:
       chat:
