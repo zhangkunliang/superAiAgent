@@ -6,7 +6,25 @@
     <div class="message-content">
       <div class="message-header">
         <span class="message-name">{{ role === 'user' ? '您' : aiName }}</span>
-        <span class="message-time">{{ formattedTime }}</span>
+        <div class="message-actions">
+          <span class="message-time">{{ formattedTime }}</span>
+          <div v-if="role === 'assistant'" class="export-buttons">
+            <button
+              @click="exportToWord"
+              class="export-btn export-word"
+              title="导出为Word文档"
+            >
+              📄 Word
+            </button>
+            <button
+              @click="exportToPDF"
+              class="export-btn export-pdf"
+              title="导出为PDF文档"
+            >
+              📋 PDF
+            </button>
+          </div>
+        </div>
       </div>
       <div class="message-text" v-html="formattedContent"></div>
     </div>
@@ -19,6 +37,8 @@ import { marked } from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import userAvatar from '../assets/user-avatar.svg';
+import { exportToWord, exportToPDF } from '../utils/exportUtils';
+import { exportToHTML, exportToText, exportToMarkdown } from '../utils/simpleExport';
 
 // 配置marked使用highlight.js
 marked.setOptions({
@@ -142,6 +162,53 @@ export default {
           .replace(/\r/g, '<br>');
       }
     }
+  },
+  methods: {
+    async exportToWord() {
+      try {
+        const message = {
+          role: this.role,
+          content: this.content,
+          timestamp: this.timestamp
+        };
+
+        // 尝试 Word 导出，失败则降级为 HTML
+        try {
+          await exportToWord([message], `${this.aiName}回复`, '');
+          this.$emit('export-success', 'Word');
+        } catch (wordError) {
+          console.warn('Word export failed, using HTML export:', wordError);
+          await exportToHTML([message], `${this.aiName}回复`, '');
+          this.$emit('export-success', 'HTML (Word替代)');
+        }
+      } catch (error) {
+        console.error('导出失败:', error);
+        this.$emit('export-error', error.message);
+      }
+    },
+
+    async exportToPDF() {
+      try {
+        const message = {
+          role: this.role,
+          content: this.content,
+          timestamp: this.timestamp
+        };
+
+        // 尝试 PDF 导出，失败则降级为 HTML
+        try {
+          await exportToPDF([message], `${this.aiName}回复`, '');
+          this.$emit('export-success', 'PDF');
+        } catch (pdfError) {
+          console.warn('PDF export failed, using HTML export:', pdfError);
+          await exportToHTML([message], `${this.aiName}回复`, '');
+          this.$emit('export-success', 'HTML (PDF替代)');
+        }
+      } catch (error) {
+        console.error('导出失败:', error);
+        this.$emit('export-error', error.message);
+      }
+    }
   }
 }
 </script>
@@ -198,8 +265,16 @@ export default {
 .message-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 8px;
   font-size: 14px;
+}
+
+.message-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
 }
 
 .message-name {
@@ -213,6 +288,52 @@ export default {
 
 .message-user .message-time {
   color: rgba(255, 255, 255, 0.7);
+}
+
+.export-buttons {
+  display: flex;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.message:hover .export-buttons {
+  opacity: 1;
+}
+
+.export-btn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.export-word {
+  background-color: #2b579a;
+  color: white;
+}
+
+.export-word:hover {
+  background-color: #1e3f73;
+}
+
+.export-pdf {
+  background-color: #dc3545;
+  color: white;
+}
+
+.export-pdf:hover {
+  background-color: #c82333;
+}
+
+.export-btn:active {
+  transform: scale(0.95);
 }
 
 .message-text {

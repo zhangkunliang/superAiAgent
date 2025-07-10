@@ -7,7 +7,25 @@
             <span class="back-icon">←</span> 返回
           </router-link>
           <h1 class="chat-title">疾控监督专家</h1>
-          <div class="chat-id">会话ID: {{ chatId }}</div>
+          <div class="header-right">
+            <div class="export-session-buttons" v-if="messages.length > 0">
+              <button
+                @click="exportSessionToWord"
+                class="export-session-btn export-word"
+                title="导出整个会话为Word文档"
+              >
+                📄 导出Word
+              </button>
+              <button
+                @click="exportSessionToPDF"
+                class="export-session-btn export-pdf"
+                title="导出整个会话为PDF文档"
+              >
+                📋 导出PDF
+              </button>
+            </div>
+            <div class="chat-id">会话ID: {{ chatId }}</div>
+          </div>
         </div>
       </div>
     </header>
@@ -80,6 +98,8 @@
               :timestamp="message.timestamp"
               ai-name="疾控监督专家"
               :ai-avatar="aiAvatar"
+              @export-success="handleExportSuccess"
+              @export-error="handleExportError"
             />
           </div>
           
@@ -121,6 +141,8 @@ import ChatMessage from '../components/ChatMessage.vue';
 import api from '../utils/api';
 import { generateChatId, formatDateTime } from '../utils/helpers';
 import aiAvatarInspector from '../assets/ai-avatar-inspector.svg';
+import { exportToWord, exportToPDF } from '../utils/exportUtils';
+import { exportToHTML, exportToText, exportToMarkdown } from '../utils/simpleExport';
 
 export default {
   name: 'InspectorApp',
@@ -327,6 +349,46 @@ export default {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
       // 保存用户偏好到本地存储
       localStorage.setItem('inspectorSidebarCollapsed', this.isSidebarCollapsed);
+    },
+
+    async exportSessionToWord() {
+      try {
+        if (this.messages.length === 0) {
+          alert('没有可导出的消息');
+          return;
+        }
+
+        await exportToWord(this.messages, '疾控监督专家会话记录', this.chatId);
+        console.log('Word导出成功');
+      } catch (error) {
+        console.error('导出Word失败:', error);
+        alert('导出Word失败: ' + error.message);
+      }
+    },
+
+    async exportSessionToPDF() {
+      try {
+        if (this.messages.length === 0) {
+          alert('没有可导出的消息');
+          return;
+        }
+
+        await exportToPDF(this.messages, '疾控监督专家会话记录', this.chatId);
+        console.log('PDF导出成功');
+      } catch (error) {
+        console.error('导出PDF失败:', error);
+        alert('导出PDF失败: ' + error.message);
+      }
+    },
+
+    handleExportSuccess(format) {
+      console.log(`${format} 导出成功`);
+      // 可以添加成功提示，比如 toast 通知
+    },
+
+    handleExportError(errorMessage) {
+      console.error('导出失败:', errorMessage);
+      alert('导出失败: ' + errorMessage);
     }
   },
   beforeUnmount() {
@@ -359,6 +421,56 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.export-session-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.export-session-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.export-session-btn.export-word {
+  background-color: #2b579a;
+  color: white;
+}
+
+.export-session-btn.export-word:hover {
+  background-color: #1e3f73;
+  transform: translateY(-1px);
+}
+
+.export-session-btn.export-pdf {
+  background-color: #dc3545;
+  color: white;
+}
+
+.export-session-btn.export-pdf:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+}
+
+.export-session-btn:active {
+  transform: scale(0.95);
 }
 
 .back-button {

@@ -8,16 +8,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.3.4",
-    "vue-router": "^4.2.4",
+    "axios": "^1.5.0",
+    "docx": "^8.5.0",
+    "highlight.js": "^11.8.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.2",
+    "marked": "^9.0.0",
     "pinia": "^2.1.6",
     "pinia-plugin-persistedstate": "^3.2.0",
-    "axios": "^1.5.0",
-    "marked": "^9.0.0",
-    "highlight.js": "^11.8.0"
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.3.4",
     "vite": "^4.4.9"
   }
-} 
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化导出功能测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .button:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        .button.html {
+            background-color: #17a2b8;
+        }
+        .button.html:hover {
+            background-color: #138496;
+        }
+        .button.text {
+            background-color: #6c757d;
+        }
+        .button.text:hover {
+            background-color: #5a6268;
+        }
+        .button.markdown {
+            background-color: #28a745;
+        }
+        .button.markdown:hover {
+            background-color: #218838;
+        }
+        .message-preview {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>简化导出功能测试</h1>
+        
+        <div class="test-section">
+            <h3>测试数据预览</h3>
+            <div class="message-preview">
+                <strong>👤 用户:</strong> 什么是疾控监督员？<br>
+                <small style="color: #666;">2025-01-10 10:30:00</small>
+            </div>
+            <div class="message-preview">
+                <strong>🤖 AI助手:</strong> 疾控监督员，即疾病预防控制监督员，是负责疾病预防控制工作监督的专业人员。他们的职责主要包括以下几个方面：<br><br>
+                1. 政策法规执行监督：监督疾病预防控制法律法规、政策、标准的执行情况，确保各项措施得到有效落实。<br><br>
+                2. 传染病防控监督：对传染病疫情报告、监测、预警、处置等环节进行监督，确保及时发现、报告、调查、控制传染病疫情。<br>
+                <small style="color: #666;">2025-01-10 10:30:15</small>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>导出测试</h3>
+            <p>以下导出功能完全在浏览器中运行，无需额外依赖：</p>
+            <button class="button html" onclick="testHTMLExport()">🌐 导出HTML</button>
+            <button class="button text" onclick="testTextExport()">📝 导出文本</button>
+            <button class="button markdown" onclick="testMarkdownExport()">📋 导出Markdown</button>
+            <div id="status" class="status"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>功能说明</h3>
+            <ul>
+                <li><strong>HTML导出</strong>：生成带样式的网页文件，支持打印和进一步编辑</li>
+                <li><strong>文本导出</strong>：纯文本格式，兼容性最好</li>
+                <li><strong>Markdown导出</strong>：标记语言格式，适合技术文档</li>
+            </ul>
+            <p><em>这些格式都完美支持中文，无需额外的字体或库支持。</em></p>
+        </div>
+    </div>
+
+    <script>
+        // 测试数据
+        const testMessages = [
+            {
+                role: 'user',
+                content: '什么是疾控监督员？',
+                timestamp: '2025-01-10T10:30:00.000Z'
+            },
+            {
+                role: 'assistant',
+                content: '疾控监督员，即疾病预防控制监督员，是负责疾病预防控制工作监督的专业人员。他们的职责主要包括以下几个方面：\\n\\n1. 政策法规执行监督：监督疾病预防控制法律法规、政策、标准的执行情况，确保各项措施得到有效落实。\\n\\n2. 传染病防控监督：对传染病疫情报告、监测、预警、处置等环节进行监督，确保及时发现、报告、调查、控制传染病疫情。\\n\\n3. 公共卫生监督：对公共卫生事件、突发公共卫生事件的预防和应对工作进行监督，保障公众健康安全。',
+                timestamp: '2025-01-10T10:30:15.000Z'
+            }
+        ];
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${isError ? 'error' : 'success'}`;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        function cleanHtmlContent(content) {
+            if (!content) return '';
+            
+            let cleanContent = content;
+            
+            try {
+                if (cleanContent.includes('\\n') || cleanContent.includes('\\r')) {
+                    const tempJson = '"' + cleanContent.replace(/"/g, '\\"') + '"';
+                    const decoded = JSON.parse(tempJson);
+                    cleanContent = decoded;
+                }
+            } catch (e) {
+                // 继续手动处理
+            }
+            
+            cleanContent = cleanContent
+                .replace(/\\n/g, '\n')
+                .replace(/\\r/g, '\n')
+                .replace(/\r\n/g, '\n')
+                .replace(/\r/g, '\n');
+            
+            return cleanContent.trim();
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function testHTMLExport() {
+            try {
+                const chatTitle = '聊天记录测试';
+                const chatId = 'test-001';
+                
+                const styles = `
+                    <style>
+                        body { font-family: 'Microsoft YaHei', 'SimSun', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+                        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                        .header h1 { margin: 0 0 10px 0; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+                        .header .meta { color: #7f8c8d; font-size: 14px; }
+                        .message { background: white; margin-bottom: 15px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                        .message-header { padding: 12px 20px; font-weight: bold; font-size: 14px; }
+                        .message-user .message-header { background-color: #3498db; color: white; }
+                        .message-assistant .message-header { background-color: #2ecc71; color: white; }
+                        .message-content { padding: 15px 20px; white-space: pre-wrap; word-wrap: break-word; }
+                        .timestamp { float: right; font-weight: normal; opacity: 0.8; }
+                    </style>
+                `;
+
+                let htmlContent = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${chatTitle}</title>${styles}</head><body><div class="header"><h1>${chatTitle}</h1><div class="meta">会话ID: ${chatId}<br>导出时间: ${new Date().toLocaleString('zh-CN')}</div></div>`;
+
+                testMessages.forEach(message => {
+                    const senderName = message.role === 'user' ? '用户' : 'AI助手';
+                    const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
+                    const content = cleanHtmlContent(message.content).replace(/\n/g, '<br>');
+                    
+                    htmlContent += `<div class="message message-${message.role}"><div class="message-header">${senderName}<span class="timestamp">${timestamp}</span></div><div class="message-content">${content}</div></div>`;
+                });
+
+                htmlContent += '</body></html>';
+                
+                downloadFile(htmlContent, `${chatTitle}_${new Date().toISOString().slice(0, 10)}.html`, 'text/html');
+                showStatus('HTML文件导出成功！');
+            } catch (error) {
+                showStatus('HTML导出失败: ' + error.message, true);
+            }
+        }
+
+        function testTextExport() {
+            try {
+                const chatTitle = '聊天记录测试';
+                const chatId = 'test-001';
+                
+                let content = `${chatTitle}\n${'='.repeat(chatTitle.length)}\n\n会话ID: ${chatId}\n导出时间: ${new Date().toLocaleString('zh-CN')}\n\n${'-'.repeat(50)}\n\n`;
+
+                testMessages.forEach((message, index) => {
+                    const senderName = message.role === 'user' ? '用户' : 'AI助手';
+                    const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
+                    
+                    content += `${senderName} (${timestamp})\n${'-'.repeat(30)}\n${cleanHtmlContent(message.content)}\n\n`;
+                    
+                    if (index < testMessages.length - 1) {
+                        content += '\n';
+                    }
+                });
+                
+                downloadFile(content, `${chatTitle}_${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain');
+                showStatus('文本文件导出成功！');
+            } catch (error) {
+                showStatus('文本导出失败: ' + error.message, true);
+            }
+        }
+
+        function testMarkdownExport() {
+            try {
+                const chatTitle = '聊天记录测试';
+                const chatId = 'test-001';
+                
+                let content = `# ${chatTitle}\n\n**会话ID:** ${chatId}\n\n**导出时间:** ${new Date().toLocaleString('zh-CN')}\n\n---\n\n`;
+
+                testMessages.forEach((message, index) => {
+                    const senderName = message.role === 'user' ? '👤 用户' : '🤖 AI助手';
+                    const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
+                    
+                    content += `## ${senderName}\n\n*${timestamp}*\n\n${cleanHtmlContent(message.content)}\n\n`;
+                    
+                    if (index < testMessages.length - 1) {
+                        content += '---\n\n';
+                    }
+                });
+                
+                downloadFile(content, `${chatTitle}_${new Date().toISOString().slice(0, 10)}.md`, 'text/markdown');
+                showStatus('Markdown文件导出成功！');
+            } catch (error) {
+                showStatus('Markdown导出失败: ' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>
