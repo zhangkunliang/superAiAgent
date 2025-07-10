@@ -15,6 +15,9 @@ public class ToolRegistration {
     @Value("${search-api.api-key}")
     private String searchApiKey;
 
+    @Value("${zhipu-ai.api-key}")
+    private String zhipuAiApiKey;
+
     @Bean
     public ToolCallback[] allTools() {
         FileOperationTool fileOperationTool = new FileOperationTool();
@@ -24,6 +27,7 @@ public class ToolRegistration {
         TerminalOperationTool terminalOperationTool = new TerminalOperationTool();
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         TerminateTool terminateTool = new TerminateTool();
+        ZhipuAITool zhipuAITool = new ZhipuAITool(zhipuAiApiKey);
         return ToolCallbacks.from(
                 fileOperationTool,
                 webSearchTool,
@@ -31,7 +35,8 @@ public class ToolRegistration {
                 resourceDownloadTool,
                 terminalOperationTool,
                 pdfGenerationTool,
-                terminateTool
+                terminateTool,
+                zhipuAITool
         );
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * PDF 生成工具
@@ -31,14 +33,13 @@ public class PDFGenerationTool {
             try (PdfWriter writer = new PdfWriter(filePath);
                  PdfDocument pdf = new PdfDocument(writer);
                  Document document = new Document(pdf)) {
-                // 自定义字体（需要人工下载字体文件到特定目录）
-//                String fontPath = Paths.get("src/main/resources/static/fonts/simsun.ttf")
-//                        .toAbsolutePath().toString();
-//                PdfFont font = PdfFontFactory.createFont(fontPath,
-//                        PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
-                // 使用内置中文字体
-                PdfFont font = PdfFontFactory.createFont("STSongStd-Light", "UniGB-UCS2-H");
-                document.setFont(font);
+
+                // 尝试设置中文字体
+                PdfFont font = createChineseFont();
+                if (font != null) {
+                    document.setFont(font);
+                }
+
                 // 创建段落
                 Paragraph paragraph = new Paragraph(content);
                 // 添加段落并关闭文档
@@ -47,6 +48,54 @@ public class PDFGenerationTool {
             return "PDF generated successfully to: " + filePath;
         } catch (IOException e) {
             return "Error generating PDF: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 创建中文字体，尝试多种方案
+     */
+    private PdfFont createChineseFont() {
+        // 方案1：尝试使用系统中文字体
+        String[] systemFonts = {
+            "C:/Windows/Fonts/simsun.ttc,0",  // Windows 宋体
+            "C:/Windows/Fonts/simhei.ttf",    // Windows 黑体
+            "C:/Windows/Fonts/msyh.ttc,0",    // Windows 微软雅黑
+            "/System/Library/Fonts/PingFang.ttc,0", // macOS 苹方
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" // Linux
+        };
+
+        for (String fontPath : systemFonts) {
+            try {
+                if (Files.exists(Paths.get(fontPath.split(",")[0]))) {
+                    return PdfFontFactory.createFont(fontPath, "Identity-H");
+                }
+            } catch (Exception e) {
+                // 继续尝试下一个字体
+            }
+        }
+
+        // 方案2：尝试使用iText内置字体
+        String[] builtinFonts = {
+            "STSongStd-Light",
+            "STSong-Light",
+            "MSungStd-Light",
+            "HeiseiKakuGo-W5"
+        };
+
+        for (String fontName : builtinFonts) {
+            try {
+                return PdfFontFactory.createFont(fontName, "UniGB-UCS2-H");
+            } catch (Exception e) {
+                // 继续尝试下一个字体
+            }
+        }
+
+        // 方案3：使用默认字体（可能不支持中文）
+        try {
+            return PdfFontFactory.createFont();
+        } catch (Exception e) {
+            // 返回null，使用系统默认字体
+            return null;
         }
     }
 }
