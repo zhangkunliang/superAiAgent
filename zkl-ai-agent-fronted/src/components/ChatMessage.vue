@@ -32,6 +32,7 @@ marked.setOptions({
   headerIds: false, // 不自动生成header IDs
   mangle: false, // 不转义html标记
   sanitize: false, // 不过滤html标签
+  pedantic: false, // 不使用原始markdown.pl的怪异行为
 });
 
 export default {
@@ -70,11 +71,75 @@ export default {
     },
     formattedContent() {
       try {
-        // 使用marked库解析Markdown
-        return marked(this.content);
+        if (!this.content) return '';
+
+        console.log('Processing content:', this.content.substring(0, 100) + '...');
+        console.log('Content includes \\n:', this.content.includes('\n'));
+        console.log('Content includes \\\\n:', this.content.includes('\\n'));
+
+        // 创建一个更强健的换行符处理函数
+        let processedContent = this.content;
+
+        // 首先尝试解码可能的 JSON 转义字符
+        try {
+          // 如果内容看起来像是 JSON 转义的，尝试解码
+          if (processedContent.includes('\\n') || processedContent.includes('\\r') || processedContent.includes('\\t')) {
+            // 创建一个临时的 JSON 字符串来解码转义字符
+            const tempJson = '"' + processedContent.replace(/"/g, '\\"') + '"';
+            const decoded = JSON.parse(tempJson);
+            console.log('Successfully decoded JSON escapes');
+            processedContent = decoded;
+          }
+        } catch (e) {
+          console.log('JSON decode failed, continuing with manual replacement');
+        }
+
+        // 处理各种换行符格式（按优先级顺序）
+        const newlineReplacements = [
+          [/\\r\\n/g, '<br>'],  // Windows 转义换行符
+          [/\\n/g, '<br>'],     // 转义的换行符
+          [/\\r/g, '<br>'],     // 转义的回车符
+          [/\r\n/g, '<br>'],    // Windows 换行符
+          [/\n/g, '<br>'],      // Unix 换行符
+          [/\r/g, '<br>']       // Mac 换行符
+        ];
+
+        for (const [pattern, replacement] of newlineReplacements) {
+          if (pattern.test(processedContent)) {
+            console.log('Replacing pattern:', pattern);
+            processedContent = processedContent.replace(pattern, replacement);
+          }
+        }
+
+        // 处理基本的 markdown 语法
+        const markdownReplacements = [
+          [/\*\*(.*?)\*\*/g, '<strong>$1</strong>'],  // 粗体
+          [/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>'], // 斜体
+          [/`([^`]+)`/g, '<code>$1</code>']  // 行内代码
+        ];
+
+        for (const [pattern, replacement] of markdownReplacements) {
+          if (pattern.test(processedContent)) {
+            processedContent = processedContent.replace(pattern, replacement);
+          }
+        }
+
+        // 清理多余的连续 <br> 标签
+        processedContent = processedContent.replace(/(<br>\s*){3,}/g, '<br><br>');
+
+        console.log('Final processed content:', processedContent.substring(0, 100) + '...');
+        return processedContent;
+
       } catch (error) {
-        console.error('Failed to parse markdown:', error);
-        return this.content;
+        console.error('Failed to parse content:', error);
+        // 最后的备用方案：强制替换所有可能的换行符
+        return this.content
+          .replace(/\\r\\n/g, '<br>')
+          .replace(/\\n/g, '<br>')
+          .replace(/\\r/g, '<br>')
+          .replace(/\r\n/g, '<br>')
+          .replace(/\n/g, '<br>')
+          .replace(/\r/g, '<br>');
       }
     }
   }
@@ -153,6 +218,7 @@ export default {
 .message-text {
   word-break: break-word;
   line-height: 1.5;
+  overflow-wrap: break-word; /* 确保长单词能够换行 */
 }
 
 /* 修改深层样式，解决scoped样式无法直接应用到v-html内容的问题 */
@@ -162,6 +228,7 @@ export default {
   border-radius: 4px;
   overflow-x: auto;
   margin: 10px 0;
+  white-space: pre-wrap; /* 保留换行符和空格 */
 }
 
 .message-text :deep(code) {
@@ -170,6 +237,10 @@ export default {
 
 .message-text :deep(p) {
   margin-bottom: 8px;
+}
+
+.message-text :deep(p:last-child) {
+  margin-bottom: 0;
 }
 
 .message-text :deep(h1),

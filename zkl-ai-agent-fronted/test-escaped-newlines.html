@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>转义换行符测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            line-height: 1.5;
+            min-height: 100px;
+        }
+        .raw-content {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>转义换行符处理测试</h1>
+    
+    <div class="test-section">
+        <h3>测试内容（包含转义的 \n）</h3>
+        <div class="raw-content" id="rawContent"></div>
+        <button class="button" onclick="testMethod1()">方法1: 替换 \\n</button>
+        <button class="button" onclick="testMethod2()">方法2: 替换 \n</button>
+        <button class="button" onclick="testMethod3()">方法3: 替换所有</button>
+        <button class="button" onclick="testMethod4()">方法4: JSON.parse</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>处理结果</h3>
+        <div class="content" id="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>调试信息</h3>
+        <div class="raw-content" id="debug"></div>
+    </div>
+
+    <script>
+        // 模拟您截图中的实际内容
+        const testContent = `Step 1: 工具 askZhipuAI 返回的结果："疾控监督员，即疾病预防控制监督员，是负责疾病预防控制工作监督的专业人员。他们的职责主要包括以下几个方面：\\n\\n1. 政策法规执行监督：监督疾病预防控制法律法规、政策、标准的执行情况，确保各项措施得到有效落实。\\n\\n2. 传染病防控监督：对传染病疫情报告、监测、预警、处置等环节进行监督，确保及时发现、报告、调查、控制传染病疫情。\\n\\n3. 公共卫生监督：对公共卫生事件、突发公共卫生事件的预防和应对工作进行监督，保障公众健康安全。"Step 2: 思考完成 - 无需行动Step 3: 工具 doTerminate 返回的结果："任务结束"`;
+
+        // 显示原始内容
+        document.getElementById('rawContent').textContent = testContent;
+
+        function updateDebug(method, result) {
+            const debug = document.getElementById('debug');
+            debug.textContent = `方法: ${method}\n` +
+                               `包含 \\\\n: ${testContent.includes('\\n')}\n` +
+                               `包含 \\n: ${testContent.includes('\n')}\n` +
+                               `原始长度: ${testContent.length}\n` +
+                               `处理后长度: ${result.length}\n` +
+                               `处理后前100字符: ${result.substring(0, 100)}...`;
+        }
+
+        function testMethod1() {
+            // 方法1: 只替换转义的 \\n
+            const result = testContent.replace(/\\n/g, '<br>');
+            document.getElementById('result').innerHTML = result;
+            updateDebug('替换 \\\\n', result);
+        }
+
+        function testMethod2() {
+            // 方法2: 只替换真正的 \n
+            const result = testContent.replace(/\n/g, '<br>');
+            document.getElementById('result').innerHTML = result;
+            updateDebug('替换 \\n', result);
+        }
+
+        function testMethod3() {
+            // 方法3: 替换所有可能的换行符
+            let result = testContent;
+            result = result.replace(/\\n/g, '<br>');
+            result = result.replace(/\n/g, '<br>');
+            result = result.replace(/\\r\\n/g, '<br>');
+            result = result.replace(/\\r/g, '<br>');
+            document.getElementById('result').innerHTML = result;
+            updateDebug('替换所有', result);
+        }
+
+        function testMethod4() {
+            // 方法4: 尝试使用 JSON.parse 处理转义字符
+            try {
+                const unescaped = JSON.parse('"' + testContent.replace(/"/g, '\\"') + '"');
+                const result = unescaped.replace(/\n/g, '<br>');
+                document.getElementById('result').innerHTML = result;
+                updateDebug('JSON.parse + 替换', result);
+            } catch (error) {
+                const result = 'JSON.parse 失败: ' + error.message;
+                document.getElementById('result').innerHTML = result;
+                updateDebug('JSON.parse 失败', result);
+            }
+        }
+
+        // 默认显示方法1的结果
+        testMethod1();
+    </script>
+</body>
+</html>

@@ -2,7 +2,7 @@
   <div class="home">
     <header class="header">
       <div class="container">
-        <h1 class="title">天王星 AI 智能体平台</h1>
+        <h1 class="title"> AI 智能体平台</h1>
         <p class="subtitle">选择您需要使用的 AI 助手</p>
       </div>
     </header>
@@ -24,6 +24,14 @@
             </div>
             <h2 class="app-title">超级智能体</h2>
             <p class="app-description">多功能 AI 助手，可执行复杂任务，提供全面的问题解决方案。</p>
+          </router-link>
+
+          <router-link :to="{ name: 'test' }" class="app-card test-card">
+            <div class="app-icon">
+              <div class="test-icon">🧪</div>
+            </div>
+            <h2 class="app-title">换行符测试</h2>
+            <p class="app-description">测试后台返回内容中换行符的显示效果。</p>
           </router-link>
         </div>
       </div>
@@ -130,6 +138,20 @@ export default {
   text-align: center;
   color: #666;
   line-height: 1.5;
+}
+
+.test-card {
+  border: 2px dashed #ddd;
+  background-color: #f9f9f9;
+}
+
+.test-icon {
+  font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 /* 响应式调整 */

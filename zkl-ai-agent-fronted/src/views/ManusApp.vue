@@ -198,17 +198,24 @@ export default {
     },
     
     handleSSEMessage(data) {
-      // 更新当前响应内容 - 对于Manus添加额外的换行
-      this.currentResponse += data + '\n';
-      
+      // 调试：打印接收到的数据
+      console.log('SSE received data:', data);
+      console.log('Data contains \\n:', data.includes('\n'));
+      console.log('Data contains \\\\n:', data.includes('\\n'));
+      console.log('Data length:', data.length);
+      console.log('Data first 100 chars:', data.substring(0, 100));
+
+      // 更新当前响应内容 - 直接添加数据，不额外添加换行
+      this.currentResponse += data;
+
       // 更新最后一条AI消息
       const chatMessages = this.chatStore.getManusChat(this.chatId);
       const lastMessage = chatMessages[chatMessages.length - 1];
-      
+
       if (lastMessage && lastMessage.role === 'assistant') {
         lastMessage.content = this.currentResponse;
       }
-      
+
       // 确保每次收到消息时都滚动到底部
       this.scrollToBottom();
     },

@@ -11,6 +11,9 @@
       }
     }
   },
+  "zhipu-web-search-sse": {
+    "url": "https://open.bigmodel.cn/api/mcp/web_search/sse?Authorization=b622eddc2be1442d9d5c1f33d3f62695.A7CSEoNhrYazDGHl"
+  },
   "zkl-image-search-mcp": {
     "command": "java",
     "args": [
