@@ -7,11 +7,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.Media;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -97,7 +100,102 @@ public abstract class BaseAgent {
      * @param userPrompt 用户提示词
      * @return 执行结果
      */
-    public SseEmitter runStream(String userPrompt) {
+//    public SseEmitter runStream(String userPrompt) {
+//        // 创建一个超时时间较长的 SseEmitter
+//        SseEmitter sseEmitter = new SseEmitter(300000L); // 5 分钟超时
+//        // 使用线程异步处理，避免阻塞主线程
+//        CompletableFuture.runAsync(() -> {
+//            // 1、基础校验
+//            try {
+//                if (this.state != AgentState.IDLE) {
+//                    sseEmitter.send("错误：无法从状态运行代理：" + this.state);
+//                    sseEmitter.complete();
+//                    return;
+//                }
+//                if (StrUtil.isBlank(userPrompt)) {
+//                    sseEmitter.send("错误：不能使用空提示词运行代理");
+//                    sseEmitter.complete();
+//                    return;
+//                }
+//            } catch (Exception e) {
+//                sseEmitter.completeWithError(e);
+//            }
+//            // 2、执行，更改状态
+//            this.state = AgentState.RUNNING;
+//            // 记录消息上下文
+//            messageList.add(new UserMessage(userPrompt));
+//            // 保存结果列表
+//            List<String> results = new ArrayList<>();
+//            try {
+//                // 执行循环
+//                for (int i = 0; i < maxSteps && state != AgentState.FINISHED; i++) {
+//                    int stepNumber = i + 1;
+//                    currentStep = stepNumber;
+//                    log.info("Executing step {}/{}", stepNumber, maxSteps);
+//                    // 单步执行
+//                    String stepResult = step();
+//                    String result = "Step " + stepNumber + ": " + stepResult;
+//                    results.add(result);
+//                    // 输出当前每一步的结果到 SSE
+//                    sseEmitter.send(result);
+//                }
+//                // 检查是否超出步骤限制
+//                if (currentStep >= maxSteps) {
+//                    state = AgentState.FINISHED;
+//                    results.add("Terminated: Reached max steps (" + maxSteps + ")");
+//                    sseEmitter.send("执行结束：达到最大步骤（" + maxSteps + "）");
+//                }
+//                // 正常完成
+//                sseEmitter.complete();
+//            } catch (Exception e) {
+//                state = AgentState.ERROR;
+//                log.error("error executing agent", e);
+//                try {
+//                    sseEmitter.send("执行错误：" + e.getMessage());
+//                    sseEmitter.complete();
+//                } catch (IOException ex) {
+//                    sseEmitter.completeWithError(ex);
+//                }
+//            } finally {
+//                // 3、清理资源
+//                this.cleanup();
+//            }
+//        });
+//
+//        // 设置超时回调
+//        sseEmitter.onTimeout(() -> {
+//            this.state = AgentState.ERROR;
+//            this.cleanup();
+//            log.warn("SSE connection timeout");
+//        });
+//        // 设置完成回调
+//        sseEmitter.onCompletion(() -> {
+//            if (this.state == AgentState.RUNNING) {
+//                this.state = AgentState.FINISHED;
+//            }
+//            this.cleanup();
+//            log.info("SSE connection completed");
+//        });
+//        return sseEmitter;
+//    }
+
+//    /**
+//     * 运行代理（流式输出）
+//     *
+//     * @param userPrompt 用户提示词
+//     * @return 执行结果
+//     */
+//    public SseEmitter runStream(String userPrompt) {
+//        return runStreamWithImage(userPrompt, null);
+//    }
+    /**
+     * 运行代理（流式输出，支持图片）
+     *
+     * @param userPrompt 用户提示词
+     * @param imageBase64 Base64编码的图片数据（可为null）
+     * @return 执行结果
+     */
+    public SseEmitter runStreamWithImage(String userPrompt, String imageBase64) {
         // 创建一个超时时间较长的 SseEmitter
         SseEmitter sseEmitter = new SseEmitter(300000L); // 5 分钟超时
         // 使用线程异步处理，避免阻塞主线程
@@ -109,8 +207,8 @@ public abstract class BaseAgent {
                     sseEmitter.complete();
                     return;
                 }
-                if (StrUtil.isBlank(userPrompt)) {
-                    sseEmitter.send("错误：不能使用空提示词运行代理");
+                if (StrUtil.isBlank(userPrompt) && StrUtil.isBlank(imageBase64)) {
+                    sseEmitter.send("错误：不能使用空提示词和空图片运行代理");
                     sseEmitter.complete();
                     return;
                 }
@@ -120,7 +218,21 @@ public abstract class BaseAgent {
             // 2、执行，更改状态
             this.state = AgentState.RUNNING;
             // 记录消息上下文
-            messageList.add(new UserMessage(userPrompt));
+            if (imageBase64 != null && !imageBase64.isEmpty()) {
+                // 创建包含图片的用户消息
+                Map<String, Object> mediaMap = new HashMap<>();
+                mediaMap.put("type", "image");
+                mediaMap.put("data", imageBase64);
+
+                // 使用带有媒体属性的Map创建UserMessage
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("media", List.of(mediaMap));
+                messageList.add(new UserMessage(userPrompt, (List<Media>) metadata));
+            } else {
+                // 普通文本消息
+                messageList.add(new UserMessage(userPrompt));
+            }
+
             // 保存结果列表
             List<String> results = new ArrayList<>();
             try {
@@ -175,7 +287,6 @@ public abstract class BaseAgent {
         });
         return sseEmitter;
     }
-
 
     /**
      * 定义单个步骤

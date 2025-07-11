@@ -98,8 +98,9 @@ public class AiController {
      * @return
      */
     @GetMapping("/manus/chat")
-    public SseEmitter doChatWithManus(String message) {
+    public SseEmitter doChatWithManus(String message, String imageBase64) {
         Manus Manus = new Manus(allTools, dashscopeChatModel);
-        return Manus.runStream(message);
+        return Manus.runStreamWithImage(message,imageBase64);
+//        return Manus.runStream(message);
     }
 }

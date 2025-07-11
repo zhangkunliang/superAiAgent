@@ -37,6 +37,8 @@ public class FileController {
     private static final String PDF_DIR = FileConstant.FILE_SAVE_DIR + "/pdf";
     private static final String DOWNLOAD_DIR = FileConstant.FILE_SAVE_DIR + "/download";
     private static final String FILE_DIR = FileConstant.FILE_SAVE_DIR + "/file";
+    private static final String IMAGE_DIR = FileConstant.FILE_SAVE_DIR + "/images";
+    private static final String TEMP_IMAGE_DIR = FileConstant.FILE_SAVE_DIR + "/temp_images";
 
     /**
      * 下载PDF文件
@@ -328,77 +330,6 @@ public class FileController {
     }
 
     /**
-     * 获取系统统计信息
-     */
-    @GetMapping("/stats")
-    @Operation(summary = "获取系统统计信息", description = "获取文件数量、总大小等统计信息")
-    public ResponseEntity<SystemStats> getSystemStats() {
-        try {
-            File pdfDir = new File(PDF_DIR);
-            SystemStats stats = new SystemStats();
-
-            if (pdfDir.exists() && pdfDir.isDirectory()) {
-                File[] files = pdfDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
-                if (files != null) {
-                    stats.setTotalFiles(files.length);
-
-                    long totalSize = 0;
-                    long lastModified = 0;
-
-                    for (File file : files) {
-                        totalSize += file.length();
-                        lastModified = Math.max(lastModified, file.lastModified());
-                    }
-
-                    stats.setTotalSize(totalSize);
-                    stats.setTotalSizeFormatted(formatFileSize(totalSize));
-
-                    if (lastModified > 0) {
-                        LocalDateTime lastUpdate = LocalDateTime.ofInstant(
-                                java.time.Instant.ofEpochMilli(lastModified),
-                                ZoneId.systemDefault()
-                        );
-                        stats.setLastUpdate(lastUpdate);
-                        stats.setLastUpdateFormatted(lastUpdate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-                    }
-                }
-            }
-
-            return ResponseEntity.ok(stats);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * 系统统计信息DTO
-     */
-    public static class SystemStats {
-        private int totalFiles = 0;
-        private long totalSize = 0;
-        private String totalSizeFormatted = "0 B";
-        private LocalDateTime lastUpdate;
-        private String lastUpdateFormatted;
-
-        // Getters and Setters
-        public int getTotalFiles() { return totalFiles; }
-        public void setTotalFiles(int totalFiles) { this.totalFiles = totalFiles; }
-
-        public long getTotalSize() { return totalSize; }
-        public void setTotalSize(long totalSize) { this.totalSize = totalSize; }
-
-        public String getTotalSizeFormatted() { return totalSizeFormatted; }
-        public void setTotalSizeFormatted(String totalSizeFormatted) { this.totalSizeFormatted = totalSizeFormatted; }
-
-        public LocalDateTime getLastUpdate() { return lastUpdate; }
-        public void setLastUpdate(LocalDateTime lastUpdate) { this.lastUpdate = lastUpdate; }
-
-        public String getLastUpdateFormatted() { return lastUpdateFormatted; }
-        public void setLastUpdateFormatted(String lastUpdateFormatted) { this.lastUpdateFormatted = lastUpdateFormatted; }
-    }
-
-    /**
      * 文件信息DTO
      */
     public static class FileInfo {
@@ -427,5 +358,49 @@ public class FileController {
         
         public String getDownloadUrl() { return downloadUrl; }
         public void setDownloadUrl(String downloadUrl) { this.downloadUrl = downloadUrl; }
+    }
+
+    /**
+     * 访问临时图片文件（用于多模态AI）
+     */
+    @GetMapping("/temp-images/{fileName}")
+    @Operation(summary = "访问临时图片", description = "访问多模态AI使用的临时图片文件")
+    public ResponseEntity<Resource> getTempImage(
+            @Parameter(description = "临时图片文件名", required = true)
+            @PathVariable String fileName) {
+
+        try {
+            // 安全检查：防止路径遍历攻击
+            if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            // 检查文件名格式
+            if (!fileName.startsWith("temp_image_") || !fileName.toLowerCase().endsWith(".jpg")) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            Path filePath = Paths.get(TEMP_IMAGE_DIR, fileName);
+            File file = filePath.toFile();
+
+            if (!file.exists() || !file.isFile()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Resource resource = new FileSystemResource(file);
+
+            // 设置响应头
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            headers.setCacheControl("public, max-age=3600"); // 缓存1小时
+            headers.setContentLength(file.length());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

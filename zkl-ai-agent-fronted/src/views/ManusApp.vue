@@ -118,17 +118,60 @@
           </div>
           
           <div class="chat-input-area">
+            <!-- 图片预览区域 -->
+            <div v-if="selectedImage" class="image-preview-container">
+              <div class="image-preview">
+                <img :src="selectedImage.preview" alt="预览图片" class="preview-image" />
+                <div class="image-info">
+                  <span class="image-name">{{ selectedImage.name }}</span>
+                  <span class="image-size">{{ formatFileSize(selectedImage.size) }}</span>
+                </div>
+                <button @click="removeImage" class="remove-image-btn" title="移除图片">
+                  ✕
+                </button>
+              </div>
+            </div>
+
             <div class="input-container">
-              <textarea
-                v-model="userInput"
-                class="message-input"
-                placeholder="请输入您的问题或指令..."
-                @keydown.enter.prevent="sendMessage"
-                :disabled="isLoading"
-              ></textarea>
-              <button @click="sendMessage" class="send-button" :disabled="isLoading || !userInput.trim()">
-                {{ isLoading ? '发送中...' : '发送' }}
-              </button>
+              <div class="input-wrapper">
+                <textarea
+                  ref="messageInput"
+                  v-model="userInput"
+                  class="message-input"
+                  placeholder="请输入您的问题或指令，支持粘贴图片..."
+                  @keydown.enter.prevent="sendMessage"
+                  @paste="handlePaste"
+                  @drop="handleDrop"
+                  @dragover.prevent
+                  @dragenter.prevent
+                  :disabled="isLoading"
+                ></textarea>
+
+                <div class="input-actions">
+                  <input
+                    ref="fileInput"
+                    type="file"
+                    accept="image/*"
+                    @change="handleFileSelect"
+                    style="display: none"
+                  />
+                  <button
+                    @click="$refs.fileInput.click()"
+                    class="attach-button"
+                    title="上传图片"
+                    :disabled="isLoading"
+                  >
+                    📎
+                  </button>
+                  <button
+                    @click="sendMessage"
+                    class="send-button"
+                    :disabled="isLoading || (!userInput.trim() && !selectedImage)"
+                  >
+                    {{ isLoading ? '发送中...' : '发送' }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -173,7 +216,10 @@ export default {
       aiAvatar: aiAvatarManus,
       showDeleteConfirm: false,
       sessionToDelete: null,
-      isSidebarCollapsed: false
+      isSidebarCollapsed: false,
+      selectedImage: null, // 选中的图片信息
+      maxImageSize: 10 * 1024 * 1024, // 10MB 最大图片大小
+      supportedImageTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
     };
   },
   computed: {
@@ -209,28 +255,49 @@ export default {
   },
   methods: {
     sendMessage() {
-      if (!this.userInput.trim() || this.isLoading) return;
-      
-      const message = this.userInput;
+      // 检查是否有内容可发送
+      if ((!this.userInput.trim() && !this.selectedImage) || this.isLoading) return;
+
+      const message = this.userInput.trim() || '请分析这张图片';
+      const imageData = this.selectedImage;
+
+      // 清空输入
       this.userInput = '';
-      
+      this.selectedImage = null;
+
+      // 构建用户消息内容（包含图片信息）
+      let userMessageContent = message;
+      if (imageData) {
+        userMessageContent += `\n[图片: ${imageData.name}]`;
+      }
+
       // 添加用户消息到聊天记录
-      this.chatStore.addManusUserMessage(this.chatId, message);
-      
+      this.chatStore.addManusUserMessage(this.chatId, userMessageContent);
+
       // 开始加载状态
       this.isLoading = true;
       this.currentResponse = '';
-      
+
       // 创建占位回复
       this.chatStore.addManusAiMessage(this.chatId, this.currentResponse);
-      
-      // 发送SSE请求
-      this.sseConnection = api.chatWithManusSSE(
-        message,
-        this.handleSSEMessage,
-        this.handleSSEError,
-        this.handleSSEComplete
-      );
+
+      // 发送请求（根据是否有图片选择不同的API）
+      if (imageData) {
+        this.sseConnection = api.chatWithManusMultiModalSSE(
+          message,
+          imageData.file,
+          this.handleSSEMessage,
+          this.handleSSEError,
+          this.handleSSEComplete
+        );
+      } else {
+        this.sseConnection = api.chatWithManusSSE(
+          message,
+          this.handleSSEMessage,
+          this.handleSSEError,
+          this.handleSSEComplete
+        );
+      }
     },
     
     handleSSEMessage(data) {
@@ -421,6 +488,85 @@ export default {
     handleExportError(errorMessage) {
       console.error('导出失败:', errorMessage);
       alert('导出失败: ' + errorMessage);
+    },
+
+    // 图片处理相关方法
+    handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.processImageFile(file);
+      }
+      // 清空input，允许重复选择同一文件
+      event.target.value = '';
+    },
+
+    handlePaste(event) {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          event.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            this.processImageFile(file);
+          }
+          break;
+        }
+      }
+    },
+
+    handleDrop(event) {
+      event.preventDefault();
+      const files = event.dataTransfer?.files;
+      if (!files || files.length === 0) return;
+
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        this.processImageFile(file);
+      } else {
+        alert('请拖拽图片文件');
+      }
+    },
+
+    processImageFile(file) {
+      // 验证文件类型
+      if (!this.supportedImageTypes.includes(file.type)) {
+        alert('不支持的图片格式。支持的格式：JPEG, PNG, GIF, WebP');
+        return;
+      }
+
+      // 验证文件大小
+      if (file.size > this.maxImageSize) {
+        alert(`图片文件过大。最大支持 ${this.formatFileSize(this.maxImageSize)}`);
+        return;
+      }
+
+      // 创建预览
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.selectedImage = {
+          file: file,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          preview: e.target.result
+        };
+      };
+      reader.readAsDataURL(file);
+    },
+
+    removeImage() {
+      this.selectedImage = null;
+    },
+
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     },
 
     async exportSessionToHTML() {
@@ -858,36 +1004,152 @@ export default {
   border-top: 1px solid var(--light-gray);
 }
 
+/* 图片预览区域 */
+.image-preview-container {
+  margin-bottom: 10px;
+}
+
+.image-preview {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 10px;
+  position: relative;
+}
+
+.preview-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 12px;
+}
+
+.image-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.image-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.image-size {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.remove-image-btn:hover {
+  background: #c82333;
+}
+
+/* 输入容器 */
 .input-container {
   display: flex;
   gap: 10px;
 }
 
+.input-wrapper {
+  flex: 1;
+  display: flex;
+  border: 1px solid var(--light-gray);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--secondary-color);
+}
+
 .message-input {
   flex: 1;
   padding: 12px 15px;
-  border: 1px solid var(--light-gray);
-  border-radius: 8px;
+  border: none;
   resize: none;
   height: 60px;
   font-family: "Microsoft YaHei", sans-serif;
   font-size: 1rem;
+  background: transparent;
 }
 
 .message-input:focus {
   outline: none;
-  border-color: var(--secondary-color);
+}
+
+.message-input::placeholder {
+  color: #999;
+}
+
+/* 拖拽状态 */
+.message-input:dragover {
+  background-color: #f0f8ff;
+}
+
+.input-actions {
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid var(--light-gray);
+}
+
+.attach-button {
+  background: transparent;
+  border: none;
+  padding: 0 12px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attach-button:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  color: var(--secondary-color);
+}
+
+.attach-button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
 }
 
 .send-button {
   background-color: var(--secondary-color);
   color: white;
   border: none;
-  border-radius: 8px;
   padding: 0 20px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .send-button:hover:not(:disabled) {

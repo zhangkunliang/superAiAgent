@@ -18,6 +18,12 @@ public class ToolRegistration {
     @Value("${zhipu-ai.api-key}")
     private String zhipuAiApiKey;
 
+    @Value("${cogview.api-key}")
+    private String cogviewApiKey;
+
+    @Value("${dashscope.api-key}")
+    private String dashscopeApiKey;
+
     @Bean
     public ToolCallback[] allTools() {
         FileOperationTool fileOperationTool = new FileOperationTool();
@@ -28,6 +34,7 @@ public class ToolRegistration {
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         TerminateTool terminateTool = new TerminateTool();
         ZhipuAITool zhipuAITool = new ZhipuAITool(zhipuAiApiKey);
+        DashScopeMultiModalTool DashScopeMultiModalTool = new DashScopeMultiModalTool(dashscopeApiKey);
         return ToolCallbacks.from(
                 fileOperationTool,
                 webSearchTool,
@@ -37,6 +44,8 @@ public class ToolRegistration {
                 pdfGenerationTool,
                 terminateTool,
                 zhipuAITool
+                ,
+                DashScopeMultiModalTool
         );
     }
 }

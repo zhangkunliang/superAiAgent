@@ -15,7 +15,7 @@
               <img :src="inspectorAvatar" alt="疾控监督专家" />
             </div>
             <h2 class="app-title">疾控监督专家</h2>
-            <p class="app-description">专业解答疾控监督相关问题，提供政策咨询及实务指导。</p>
+            <p class="app-description">参照医疗卫生法律法规知识库，专业解答疾控监督相关问题，提供政策咨询及实务指导。</p>
           </router-link>
           
           <router-link :to="{ name: 'manus-app', params: { chatId: generateNewChatId() } }" class="app-card">
@@ -23,7 +23,7 @@
               <img :src="manusAvatar" alt="超级智能体" />
             </div>
             <h2 class="app-title">超级智能体</h2>
-            <p class="app-description">多功能 AI 助手，可执行复杂任务，提供全面的问题解决方案。</p>
+            <p class="app-description">多功能 AI 助手，可执行复杂任务，提供全面的问题解决方案，包括疾控监督、疫情防控、卫生法律法规等。</p>
           </router-link>
 
           <router-link :to="{ name: 'test' }" class="app-card test-card">
