@@ -98,48 +98,37 @@ export default {
 }
 
 .header-top {
+  position: relative;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
-  position: relative;
 }
 
 .header-content {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   text-align: center;
-  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 15px;
-  background-color: rgba(102, 126, 234, 0.05);
-  padding: 12px 20px;
-  border-radius: 25px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
-  transition: all 0.3s ease;
-}
-
-.user-info:hover {
-  background-color: rgba(102, 126, 234, 0.08);
-  border-color: rgba(102, 126, 234, 0.2);
 }
 
 .welcome-text {
   color: var(--text-color);
   font-weight: 500;
-  font-size: 0.95rem;
 }
 
 .logout-btn {
@@ -232,30 +221,20 @@ export default {
   }
   
   .header-top {
+    position: static;
     flex-direction: column;
-    text-align: center;
     justify-content: center;
+    text-align: center;
   }
   
   .header-content {
+    position: static;
+    transform: none;
     order: 1;
   }
   
   .header-actions {
     order: 2;
-    position: static;
-    transform: none;
-    justify-content: center;
-    margin-top: 20px;
-  }
-  
-  .user-info {
-    padding: 10px 16px;
-    border-radius: 20px;
-  }
-  
-  .welcome-text {
-    font-size: 0.9rem;
   }
   
   .title {

@@ -72,10 +72,11 @@
                 />
                 <div class="captcha-image" @click="refreshLoginCaptcha">
                   <img 
-                    v-if="loginCaptchaData.captcha && getCaptchaImageSrc(loginCaptchaData.captcha)" 
+                    v-if="loginCaptchaData.captcha" 
                     :src="getCaptchaImageSrc(loginCaptchaData.captcha)" 
                     alt="验证码"
                     @error="onCaptchaImageError"
+                    @load="onCaptchaImageLoad"
                     style="display: block;"
                   />
                   <div v-else-if="loading" class="captcha-loading">加载中...</div>
@@ -168,10 +169,11 @@
                 />
                 <div class="captcha-image" @click="refreshRegisterCaptcha">
                   <img 
-                    v-if="registerCaptchaData.captcha && getCaptchaImageSrc(registerCaptchaData.captcha)" 
+                    v-if="registerCaptchaData.captcha" 
                     :src="getCaptchaImageSrc(registerCaptchaData.captcha)" 
                     alt="验证码"
                     @error="onCaptchaImageError"
+                    @load="onCaptchaImageLoad"
                     style="display: block;"
                   />
                   <div v-else-if="loading" class="captcha-loading">加载中...</div>
@@ -301,18 +303,48 @@ export default {
     // 加载登录验证码
     async loadLoginCaptcha() {
       try {
+        console.log('开始请求验证码...') // 调试日志
+        
+        // 添加 await 延迟来确保异步执行
+        await new Promise(resolve => setTimeout(resolve, 10))
+        console.log('准备调用 API...')
+        
         const response = await api.auth.getCaptcha()
-        console.log('登录验证码响应:', response) // 调试日志
-        if (response.success && response.data) {
+        console.log('API调用完成，开始处理响应...')
+        console.log('登录验证码完整响应:', response) // 调试日志
+        console.log('响应类型:', typeof response) // 调试日志
+        console.log('响应success字段:', response?.success) // 调试日志
+        console.log('响应data字段:', response?.data) // 调试日志
+        
+        // 强制刷新 Vue 响应式
+        await this.$nextTick()
+        console.log('Vue nextTick 完成')
+        
+        if (response && response.success && response.data) {
+          console.log('开始设置验证码数据...')
           this.loginCaptchaData = response.data
           this.loginForm.captchaKey = response.data.key
-          console.log('验证码数据:', this.loginCaptchaData) // 调试日志
+          
+          // 强制刷新
+          await this.$nextTick()
+          console.log('设置验证码数据成功:', this.loginCaptchaData) // 调试日志
+          console.log('验证码图片数据长度:', response.data.captcha?.length) // 调试日志
+          console.log('验证码图片数据前50字符:', response.data.captcha?.substring(0, 50)) // 调试日志
+          
+          // 手动触发 getCaptchaImageSrc 来测试
+          console.log('手动测试 getCaptchaImageSrc...')
+          const testSrc = this.getCaptchaImageSrc(response.data.captcha)
+          console.log('手动调用 getCaptchaImageSrc 结果前100字符:', testSrc?.substring(0, 100))
+          
         } else {
-          this.showToast('获取验证码失败', 'error')
+          console.error('验证码响应格式错误:', response) // 调试日志
+          this.showToast('获取验证码失败：响应格式错误', 'error')
         }
       } catch (error) {
-        console.error('获取验证码失败:', error)
-        this.showToast(error.message || '获取验证码失败', 'error')
+        console.error('获取验证码网络错误:', error) // 调试日志
+        console.error('错误详情:', error.response || error) // 调试日志
+        console.error('错误堆栈:', error.stack) // 添加堆栈信息
+        this.showToast(`获取验证码失败：${error.message || '网络错误'}`, 'error')
       }
     },
     
@@ -490,32 +522,106 @@ export default {
     
     // 获取验证码图片源
     getCaptchaImageSrc(captchaData) {
-      if (!captchaData) return ''
+      console.log('=== getCaptchaImageSrc 开始执行 ===')
+      console.log('getCaptchaImageSrc被调用，数据类型:', typeof captchaData)
+      console.log('getCaptchaImageSrc被调用，数据长度:', captchaData?.length)
+      console.log('getCaptchaImageSrc被调用，数据前50字符:', captchaData?.substring(0, 50))
+      console.log('getCaptchaImageSrc被调用，数据后50字符:', captchaData?.substring(captchaData?.length - 50))
+      
+      if (!captchaData) {
+        console.log('验证码数据为空，返回空字符串')
+        return ''
+      }
       
       // 检查是否已经是完整的data URL
       if (captchaData.startsWith('data:image/')) {
+        console.log('验证码数据已经是完整的data URL')
         return captchaData
       }
       
       // 如果不是，添加data URL前缀
-      return `data:image/png;base64,${captchaData}`
+      const result = `data:image/png;base64,${captchaData}`
+      console.log('添加data URL前缀后的结果前100字符:', result.substring(0, 100))
+      console.log('添加data URL前缀后的结果总长度:', result.length)
+      
+      // 验证 base64 格式
+      try {
+        // 简单验证 base64 格式
+        const base64Test = atob(captchaData.substring(0, 100))
+        console.log('base64 解码测试成功，前100字符可以正常解码')
+      } catch (error) {
+        console.error('base64 解码测试失败:', error)
+      }
+      
+      console.log('=== getCaptchaImageSrc 执行完成 ===')
+      return result
+    },
+    
+    // 验证码图片加载成功处理
+    onCaptchaImageLoad(event) {
+      console.log('验证码图片加载成功:', event.target.src.substring(0, 50) + '...')
     },
     
     // 验证码图片加载错误处理
     onCaptchaImageError(event) {
-      console.error('验证码图片加载失败:', event)
-      console.log('当前验证码数据:', this.loginCaptchaData.captcha)
+      console.error('=== 验证码图片加载失败 ===')
+      console.error('错误事件对象:', event)
+      console.error('错误类型:', event.type)
+      console.error('目标元素:', event.target)
+      console.log('当前验证码数据对象:', this.loginCaptchaData)
+      console.log('当前验证码数据长度:', this.loginCaptchaData.captcha?.length)
+      console.log('验证码数据前100字符:', this.loginCaptchaData.captcha?.substring(0, 100))
+      console.log('验证码数据后100字符:', this.loginCaptchaData.captcha?.substring(this.loginCaptchaData.captcha?.length - 100))
+      console.log('完整图片src长度:', event.target.src?.length)
+      console.log('图片src前100字符:', event.target.src?.substring(0, 100))
+      console.log('图片src后100字符:', event.target.src?.substring(event.target.src?.length - 100))
+      
+      // 验证 img 元素状态
+      console.log('img元素naturalWidth:', event.target.naturalWidth)
+      console.log('img元素naturalHeight:', event.target.naturalHeight)
+      console.log('img元素complete:', event.target.complete)
+      
       this.showToast('验证码图片加载失败，请点击刷新', 'error')
     },
     
     // 测试验证码API
     async testCaptchaApi() {
       try {
-        const response = await fetch('/api/auth/captcha')
+        console.log('=== 开始API连接测试 ===')
+        console.log('当前环境:', import.meta.env.PROD ? '生产环境' : '开发环境')
+        console.log('API_BASE_URL:', import.meta.env.PROD ? '/api' : 'http://localhost:8123/api')
+        console.log('当前页面URL:', window.location.href)
+        
+        const response = await fetch('/api/auth/captcha', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        })
+        
+        console.log('API响应状态:', response.status)
+        console.log('API响应头:', Object.fromEntries(response.headers.entries()))
+        console.log('API响应OK:', response.ok)
+        
+        if (!response.ok) {
+          console.error('API响应错误:', response.status, response.statusText)
+          const errorText = await response.text()
+          console.error('错误响应内容:', errorText)
+          return
+        }
+        
         const data = await response.json()
         console.log('直接API测试结果:', data)
+        console.log('直接API验证码数据长度:', data?.data?.captcha?.length)
+        console.log('直接API验证码数据前50字符:', data?.data?.captcha?.substring(0, 50))
+        
       } catch (error) {
         console.error('API测试失败:', error)
+        console.error('错误类型:', error.name)
+        console.error('错误信息:', error.message)
+        console.error('错误堆栈:', error.stack)
       }
     }
   }
@@ -543,6 +649,10 @@ export default {
 }
 
 .auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 40px 40px 20px;
   background: linear-gradient(135deg, var(--primary-color) 0%, #3367d6 100%);
@@ -553,11 +663,13 @@ export default {
   font-size: 2.2rem;
   margin-bottom: 8px;
   font-weight: 600;
+  text-align: center;
 }
 
 .auth-subtitle {
   font-size: 1rem;
   opacity: 0.9;
+  text-align: center;
 }
 
 .auth-content {
@@ -813,6 +925,11 @@ export default {
   }
   
   .auth-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     padding: 30px 20px 15px;
   }
   
