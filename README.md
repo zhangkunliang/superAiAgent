@@ -1,7 +1,7 @@
 
 
 # AI疾控监督智能体
-**在线演示地址**: [https://zkl-ai-agent-fronted-170796-7-1327163146.sh.run.tcloudbase.com/](https://zkl-ai-agent-fronted-170796-7-1327163146.sh.run.tcloudbase.com/)
+**在线演示地址**: [http://zklaiagent.top/](http://zklaiagent.top/)
 
 ---
 # superAiAgent
