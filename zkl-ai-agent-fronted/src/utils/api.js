@@ -196,6 +196,79 @@ export const api = {
         reject(error);
       });
     });
+  },
+
+  // 认证相关API
+  auth: {
+    // 获取登录验证码
+    async getCaptcha() {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/auth/captcha`);
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
+
+    // 获取注册验证码
+    async getRegisterCaptcha() {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/auth/register/captcha`);
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
+
+    // 用户登录
+    async login(loginData) {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/auth/login`, loginData);
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
+
+    // 用户注册
+    async register(registerData) {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/auth/register`, registerData);
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
+
+    // 退出登录
+    async logout() {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/auth/logout`);
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
+
+    // 获取用户信息
+    async getUserInfo() {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/auth/getUserInfo`);
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
+
+    // 修改密码
+    async updatePassword(passwordData) {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/auth/updatePwd`, passwordData);
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    }
   }
 };
 

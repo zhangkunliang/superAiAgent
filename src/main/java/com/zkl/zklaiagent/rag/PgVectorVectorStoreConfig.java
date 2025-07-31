@@ -33,6 +33,7 @@ public class PgVectorVectorStoreConfig {
                 .build();
         // 加载文档
         List<Document> documents = inspectorAppDocumentLoader.loadMarkdowns();
+//        List<Document> documents = inspectorAppDocumentLoader.loadAllDocuments();
         vectorStore.add(documents);
         return vectorStore;
     }
