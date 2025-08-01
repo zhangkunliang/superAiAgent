@@ -82,11 +82,23 @@ public class ToolCallAgent extends ReActAgent {
             // 输出提示信息
             String result = assistantMessage.getText();
             log.info(getName() + "的思考：" + result);
+            
+            // 发送思考消息到前端
+            if (StrUtil.isNotBlank(result)) {
+                sendThinkingMessage("💭 " + result);
+            }
+            
             log.info(getName() + "选择了 " + toolCallList.size() + " 个工具来使用");
             String toolCallInfo = toolCallList.stream()
-                    .map(toolCall -> String.format("工具名称：%s，参数：%s", toolCall.name(), toolCall.arguments()))
-                    .collect(Collectors.joining("\n"));
+                    .map(toolCall -> String.format("🔧 %s", toolCall.name()))
+                    .collect(Collectors.joining("、"));
             log.info(toolCallInfo);
+            
+            // 发送工具选择信息到前端
+            if (!toolCallList.isEmpty()) {
+                String toolMessage = String.format("🛠️ 准备调用工具：%s", toolCallInfo);
+                sendToolCallingMessage(toolCallInfo, toolMessage);
+            }
             // 如果不需要调用工具，返回 false
             if (toolCallList.isEmpty()) {
                 // 只有不调用工具时，才需要手动记录助手消息
@@ -111,25 +123,48 @@ public class ToolCallAgent extends ReActAgent {
     @Override
     public String act() {
         if (!toolCallChatResponse.hasToolCalls()) {
-            return "没有工具需要调用";
+            String noToolMessage = "🤖 无需调用工具，直接给出回答。";
+            sendContentMessage(noToolMessage);
+            return noToolMessage;
         }
+        
+        // 发送工具执行开始消息
+        sendContentMessage("⚡ 开始执行工具调用...");
+        
         // 调用工具
         Prompt prompt = new Prompt(getMessageList(), this.chatOptions);
         ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, toolCallChatResponse);
+        
         // 记录消息上下文，conversationHistory 已经包含了助手消息和工具调用返回的结果
         setMessageList(toolExecutionResult.conversationHistory());
         ToolResponseMessage toolResponseMessage = (ToolResponseMessage) CollUtil.getLast(toolExecutionResult.conversationHistory());
+        
+        // 处理每个工具的执行结果
+        StringBuilder resultBuilder = new StringBuilder();
+        for (var response : toolResponseMessage.getResponses()) {
+            String toolName = response.name();
+            String responseData = response.responseData();
+            
+            // 发送单个工具的执行结果
+            String toolResult = String.format("✅ **%s** 执行完成\n\n%s", toolName, responseData);
+            sendContentMessage(toolResult);
+            
+            // 累积到总结果中
+            resultBuilder.append(toolResult).append("\n\n");
+            
+            log.info("工具 {} 执行结果: {}", toolName, responseData);
+        }
+        
         // 判断是否调用了终止工具
         boolean terminateToolCalled = toolResponseMessage.getResponses().stream()
                 .anyMatch(response -> response.name().equals("doTerminate"));
+        
         if (terminateToolCalled) {
             // 任务结束，更改状态
             setState(AgentState.FINISHED);
+            sendContentMessage("🏁 检测到终止指令，任务即将结束。");
         }
-        String results = toolResponseMessage.getResponses().stream()
-                .map(response -> "工具 " + response.name() + " 返回的结果：" + response.responseData())
-                .collect(Collectors.joining("\n"));
-        log.info(results);
-        return results;
+        
+        return resultBuilder.toString().trim();
     }
 }

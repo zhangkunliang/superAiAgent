@@ -86,7 +86,37 @@
               <div class="welcome-message">
                 <img :src="aiAvatar" alt="疾控监督专家" class="welcome-avatar" />
                 <h2>欢迎使用疾控监督专家</h2>
-                <p>请输入您的问题，我将尽力为您提供专业解答。</p>
+                <p>专业的疾控监督AI助手，为您提供权威的疾病预防控制指导。</p>
+                
+                <!-- 功能亮点展示 -->
+                <div class="feature-highlights">
+                  <div class="feature-item">
+                    <span class="feature-icon">🏥</span>
+                    <span class="feature-text">疾病预防咨询</span>
+                  </div>
+                  <div class="feature-item">
+                    <span class="feature-icon">📋</span>
+                    <span class="feature-text">监督检查指导</span>
+                  </div>
+                  <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span class="feature-text">实时智能解答</span>
+                  </div>
+                  <div class="feature-item">
+                    <span class="feature-icon">📄</span>
+                    <span class="feature-text">文档导出功能</span>
+                  </div>
+                </div>
+                
+                <div class="quick-tips">
+                  <p class="tips-title">💡 您可以询问：</p>
+                  <ul class="tips-list">
+                    <li>疾病预防控制相关问题</li>
+                    <li>卫生监督检查标准</li>
+                    <li>公共卫生应急处理</li>
+                    <li>法规政策解读</li>
+                  </ul>
+                </div>
               </div>
             </div>
             
@@ -159,7 +189,24 @@ export default {
       aiAvatar: aiAvatarInspector,
       showDeleteConfirm: false,
       sessionToDelete: null,
-      isSidebarCollapsed: false
+      isSidebarCollapsed: false,
+      
+      // 新增：消息处理优化相关
+      messageBuffer: [], // 消息缓冲区
+      updateTimer: null, // 更新定时器
+      autoScroll: true, // 自动滚动开关
+      
+      // 新增：错误处理相关
+      connectionRetries: 0,
+      maxRetries: 3,
+      retryDelay: 1000,
+      isReceivingData: false, // 标记是否正在接收数据
+      hasReceivedData: false, // 标记是否已收到数据
+      
+      // 新增：性能监控
+      lastMessageTime: 0,
+      messageCount: 0,
+      averageResponseTime: 0
     };
   },
   computed: {
@@ -193,6 +240,10 @@ export default {
   updated() {
     this.scrollToBottom();
   },
+  beforeUnmount() {
+    // 组件销毁前清理资源
+    this.cleanupResources();
+  },
   methods: {
     sendMessage() {
       if (!this.userInput.trim() || this.isLoading) return;
@@ -200,58 +251,354 @@ export default {
       const message = this.userInput;
       this.userInput = '';
       
+      // 重置消息状态
+      this.resetMessageState();
+      
+      // 记录发送时间（用于性能监控）
+      this.lastMessageTime = Date.now();
+      
       // 添加用户消息到聊天记录
       this.chatStore.addInspectorUserMessage(this.chatId, message);
       
-      // 开始加载状态
+      // 开始加载状态和初始化
       this.isLoading = true;
-      this.currentResponse = '';
+      this.currentResponse = '🤔 疾控监督专家正在思考中...';
       
-      // 创建占位回复
+      // 创建初始占位回复
       this.chatStore.addInspectorAiMessage(this.chatId, this.currentResponse);
       
-      // 发送SSE请求
-      this.sseConnection = api.chatWithInspectorSSE(
-        message,
-        this.chatId,
-        this.handleSSEMessage,
-        this.handleSSEError,
-        this.handleSSEComplete
-      );
+      // 发送请求
+      try {
+        this.sseConnection = api.chatWithInspectorSSE(
+          message,
+          this.chatId,
+          this.handleSSEMessage,
+          this.handleSSEError,
+          this.handleSSEComplete
+        );
+      } catch (error) {
+        console.error('发送消息失败:', error);
+        this.handleSSEError(error);
+      }
+    },
+    
+    resetMessageState() {
+      // 重置消息相关状态
+      this.currentResponse = '';
+      this.messageBuffer = [];
+      this.connectionRetries = 0;
+      this.isReceivingData = false;
+      this.hasReceivedData = false;
+      
+      // 清理现有定时器
+      if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+        this.updateTimer = null;
+      }
     },
     
     handleSSEMessage(data) {
-      // 更新当前响应内容
-      this.currentResponse += data;
+      try {
+        // 标记正在接收数据
+        this.isReceivingData = true;
+        this.hasReceivedData = true;
+        
+        // 调试：记录接收数据（开发环境）
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Inspector SSE received:', data.substring(0, 100) + '...');
+        }
+
+        // 尝试解析JSON格式的消息（支持结构化消息）
+        let messageData;
+        try {
+          messageData = JSON.parse(data);
+          this.handleStructuredMessage(messageData);
+          return;
+        } catch (e) {
+          // 如果不是JSON格式，按原文本处理
+          console.log('Non-JSON message, treating as plain text');
+        }
+
+        // 优化：批量更新减少重绘
+        this.messageBuffer.push(data);
+        
+        // 节流处理：避免过于频繁的DOM更新
+        if (!this.updateTimer) {
+          this.updateTimer = setTimeout(() => {
+            this.flushMessageBuffer();
+            this.updateTimer = null;
+          }, 50); // 50ms节流间隔
+        }
+
+      } catch (error) {
+        console.error('Error handling SSE message:', error);
+        // 降级处理：直接追加文本，但不触发重连
+        this.appendToResponse(data);
+      }
+    },
+    
+    handleStructuredMessage(messageData) {
+      const { type, content, finished } = messageData;
       
-      // 更新最后一条AI消息
+      // 根据消息类型处理（为未来扩展预留）
+      switch (type) {
+        case 'THINKING':
+          this.appendToResponse(`💭 **思考中**\n${content}\n\n`);
+          break;
+          
+        case 'CONTENT':
+          this.appendToResponse(content);
+          break;
+          
+        case 'COMPLETE':
+          this.appendToResponse(content);
+          this.markAsComplete();
+          break;
+          
+        case 'ERROR':
+          this.appendToResponse(`❌ **错误**\n${content}\n\n`);
+          this.markAsError();
+          break;
+          
+        default:
+          // 未知类型，按内容处理
+          this.appendToResponse(content);
+      }
+
+      // 智能滚动
+      this.smartScrollToBottom();
+    },
+    
+    flushMessageBuffer() {
+      if (this.messageBuffer.length === 0) return;
+      
+      // 批量处理缓冲区的消息
+      const batchData = this.messageBuffer.join('');
+      this.messageBuffer = [];
+      
+      // 追加到响应中
+      this.appendToResponse(batchData);
+      
+      // 智能滚动：只在用户接近底部时自动滚动
+      this.smartScrollToBottom();
+    },
+    
+    appendToResponse(content) {
+      if (content && content.trim()) {
+        // 如果是第一次接收到真实内容，清除占位符
+        if (this.currentResponse.includes('🤔 疾控监督专家正在思考中...')) {
+          this.currentResponse = '';
+        }
+        
+        this.currentResponse += content;
+        this.updateLastMessage();
+      }
+    },
+    
+    updateLastMessage() {
       const chatMessages = this.chatStore.getInspectorChat(this.chatId);
       const lastMessage = chatMessages[chatMessages.length - 1];
       
       if (lastMessage && lastMessage.role === 'assistant') {
         lastMessage.content = this.currentResponse;
       }
-      
-      // 确保每次收到消息时都滚动到底部
-      this.scrollToBottom();
+    },
+    
+    markAsComplete() {
+      // 标记任务完成
+      this.isLoading = false;
+    },
+    
+    markAsError() {
+      // 标记任务出错
+      this.isLoading = false;
     },
     
     handleSSEError(error) {
       console.error('SSE连接错误:', error);
-      this.isLoading = false;
       
-      // 如果没有收到任何响应，添加错误消息
-      if (!this.currentResponse) {
-        this.chatStore.addInspectorAiMessage(
-          this.chatId, 
-          '很抱歉，连接出现问题，请稍后再试。'
+      // 重要：如果已经在接收数据过程中，或者已经收到了部分数据，不应该重试
+      // 这通常表示连接正常，只是数据传输过程中的临时问题
+      if (this.isReceivingData || this.hasReceivedData) {
+        console.log('正在传输数据过程中出现错误，不触发重连机制');
+        this.isLoading = false;
+        
+        // 如果有部分响应内容，保留它们，只添加错误提示
+        if (this.currentResponse && !this.currentResponse.includes('🤔 疾控监督专家正在思考中...')) {
+          this.appendToResponse('\n\n⚠️ 传输完成，如有遗漏请重新提问。');
+        } else {
+          this.showErrorMessage(error);
+        }
+        return;
+      }
+      
+      // 清理定时器和缓冲区
+      if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+        this.updateTimer = null;
+      }
+      this.messageBuffer = [];
+      
+      // 检查错误类型，只有真正的连接错误才重试
+      const shouldRetry = this.shouldRetryConnection(error);
+      
+      if (shouldRetry && this.connectionRetries < this.maxRetries) {
+        this.connectionRetries++;
+        const delay = this.retryDelay * this.connectionRetries;
+        
+        this.showRetryMessage(`连接失败，${delay/1000}秒后自动重试 (${this.connectionRetries}/${this.maxRetries})...`);
+        
+        setTimeout(() => {
+          this.retryLastMessage();
+        }, delay);
+      } else {
+        // 超过最大重试次数或不应该重试
+        this.isLoading = false;
+        this.showErrorMessage(error);
+      }
+    },
+    
+    shouldRetryConnection(error) {
+      // 判断是否应该重试连接
+      // 只有在真正的连接问题时才重试
+      
+      // 如果错误是网络相关的，可以重试
+      if (error && error.type) {
+        switch (error.type) {
+          case 'error':
+            // 连接错误，可以重试
+            return true;
+          case 'timeout':
+            // 超时错误，可以重试
+            return true;
+          case 'abort':
+            // 用户主动取消，不重试
+            return false;
+          default:
+            // 其他类型错误，谨慎处理，不重试
+            return false;
+        }
+      }
+      
+      // 如果错误对象有特定的网络错误标识
+      if (error && (error.code === 'NETWORK_ERROR' || error.message.includes('network'))) {
+        return true;
+      }
+      
+      // 默认情况下，如果没有收到任何数据且没有在传输过程中，可以重试
+      return !this.hasReceivedData && !this.isReceivingData;
+    },
+    
+    showRetryMessage(message) {
+      // 显示重试消息
+      if (this.currentResponse.includes('🤔 疾控监督专家正在思考中...')) {
+        this.currentResponse = '';
+      }
+      this.appendToResponse(`🔄 ${message}\n\n`);
+    },
+    
+    showErrorMessage(error) {
+      // 显示用户友好的错误消息
+      let errorMessage = '很抱歉，连接出现问题。';
+      
+      if (error.type === 'timeout') {
+        errorMessage = '连接超时，请检查网络后重试。';
+      } else if (error.type === 'error') {
+        errorMessage = '服务暂时不可用，请稍后再试。';
+      }
+      
+      // 如果没有收到任何有效响应，显示错误消息
+      if (!this.currentResponse || this.currentResponse.includes('🤔 疾控监督专家正在思考中...')) {
+        this.currentResponse = `❌ ${errorMessage}`;
+        this.updateLastMessage();
+      } else {
+        this.appendToResponse(`\n\n❌ ${errorMessage}`);
+      }
+    },
+    
+    retryLastMessage() {
+      // 找到最后一条用户消息并重新发送
+      const chatMessages = this.chatStore.getInspectorChat(this.chatId);
+      const lastUserMessage = [...chatMessages].reverse().find(msg => msg.role === 'user');
+      
+      if (lastUserMessage) {
+        this.resendMessage(lastUserMessage.content);
+      }
+    },
+    
+    resendMessage(message) {
+      // 重新发送消息
+      this.resetMessageState();
+      this.isLoading = true;
+      this.currentResponse = '🔄 正在重新连接...';
+      this.updateLastMessage();
+      
+      try {
+        this.sseConnection = api.chatWithInspectorSSE(
+          message,
+          this.chatId,
+          this.handleSSEMessage,
+          this.handleSSEError,
+          this.handleSSEComplete
         );
+      } catch (error) {
+        console.error('重发消息失败:', error);
+        this.handleSSEError(error);
       }
     },
     
     handleSSEComplete() {
+      // 清理定时器和缓冲区
+      if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+        this.updateTimer = null;
+      }
+      this.messageBuffer = [];
+      
+      // 重置状态标记
+      this.isReceivingData = false;
+      this.connectionRetries = 0;
+      
+      // 计算响应时间
+      if (this.lastMessageTime) {
+        const responseTime = Date.now() - this.lastMessageTime;
+        this.updateResponseTimeStats(responseTime);
+      }
+      
+      // 标记完成
       this.isLoading = false;
       this.sseConnection = null;
+      
+      // 确保最终滚动
+      this.smartScrollToBottom();
+      
+      // 开发环境日志
+      if (process.env.NODE_ENV === 'development') {
+        console.log('SSE连接正常完成，已收到数据:', this.hasReceivedData);
+      }
+    },
+    
+    updateResponseTimeStats(responseTime) {
+      // 更新平均响应时间统计
+      this.messageCount++;
+      this.averageResponseTime = (this.averageResponseTime * (this.messageCount - 1) + responseTime) / this.messageCount;
+      
+      // 开发环境下记录性能指标
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`响应时间: ${responseTime}ms, 平均响应时间: ${Math.round(this.averageResponseTime)}ms`);
+      }
+    },
+    
+    smartScrollToBottom() {
+      // 智能滚动：检查用户是否接近底部
+      const container = this.$refs.messagesContainer;
+      if (!container) return;
+      
+      const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+      
+      if (isNearBottom || this.autoScroll) {
+        this.scrollToBottom();
+      }
     },
     
     scrollToBottom() {
@@ -389,13 +736,34 @@ export default {
     handleExportError(errorMessage) {
       console.error('导出失败:', errorMessage);
       alert('导出失败: ' + errorMessage);
+    },
+    
+    cleanupResources() {
+      // 清理SSE连接
+      if (this.sseConnection) {
+        this.sseConnection.close();
+        this.sseConnection = null;
+      }
+      
+      // 清理定时器
+      if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+        this.updateTimer = null;
+      }
+      
+      // 清理缓冲区和状态
+      this.messageBuffer = [];
+      this.isReceivingData = false;
+      this.hasReceivedData = false;
+      this.connectionRetries = 0;
+      
+      // 重置加载状态
+      this.isLoading = false;
     }
   },
   beforeUnmount() {
-    // 确保关闭SSE连接
-    if (this.sseConnection) {
-      this.sseConnection.close();
-    }
+    // 组件销毁前清理资源
+    this.cleanupResources();
   }
 }
 </script>
@@ -821,6 +1189,89 @@ export default {
   margin-bottom: 20px;
 }
 
+/* 功能亮点展示 */
+.feature-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+  margin: 25px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 10px;
+  border: 1px solid #dee2e6;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 10px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.feature-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(66, 133, 244, 0.1);
+}
+
+.feature-icon {
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+
+.feature-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #2c3e50;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* 快速提示 */
+.quick-tips {
+  margin-top: 25px;
+  padding: 20px;
+  background: rgba(66, 133, 244, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(66, 133, 244, 0.1);
+  text-align: left;
+}
+
+.tips-title {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tips-list li {
+  padding: 6px 0;
+  color: #4a5568;
+  font-size: 0.9rem;
+  position: relative;
+  padding-left: 16px;
+}
+
+.tips-list li::before {
+  content: "•";
+  color: var(--primary-color);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+  top: 6px;
+}
+
 .chat-input-area {
   padding: 15px;
   border-top: 1px solid var(--light-gray);
@@ -954,6 +1405,46 @@ export default {
   .delete-session-btn {
     visibility: visible;
     opacity: 1;
+  }
+  
+  /* 响应式：功能亮点 */
+  .feature-highlights {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+    padding: 15px;
+  }
+  
+  .feature-item {
+    padding: 12px 8px;
+  }
+  
+  .feature-icon {
+    font-size: 1.2rem;
+  }
+  
+  .feature-text {
+    font-size: 0.8rem;
+  }
+  
+  /* 响应式：快速提示 */
+  .quick-tips {
+    margin-top: 20px;
+    padding: 15px;
+  }
+  
+  .tips-title {
+    font-size: 0.9rem;
+  }
+  
+  .tips-list li {
+    font-size: 0.85rem;
+    padding: 4px 0;
+  }
+  
+  .welcome-message {
+    padding: 20px;
+    max-width: 100%;
   }
 }
 </style> 

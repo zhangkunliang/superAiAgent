@@ -98,21 +98,16 @@ export default {
 }
 
 .header-top {
-  position: relative;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
 }
 
 .header-content {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
   text-align: center;
-  white-space: nowrap;
+  flex: 1;
 }
 
 .header-actions {
@@ -221,15 +216,11 @@ export default {
   }
   
   .header-top {
-    position: static;
     flex-direction: column;
-    justify-content: center;
     text-align: center;
   }
   
   .header-content {
-    position: static;
-    transform: none;
     order: 1;
   }
   
